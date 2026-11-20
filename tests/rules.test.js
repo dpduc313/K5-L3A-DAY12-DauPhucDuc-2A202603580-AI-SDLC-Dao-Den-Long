@@ -104,7 +104,8 @@ test('hết giờ thì thua dawn; time_left_s theo scenario', () => {
 test('lịch sinh Bóng Mực Đêm 1: 2 con ở tick 300, rồi mỗi 480 tick, tối đa 6', () => {
   // Ticket-02 thay lịch Phase 1 (2 con lúc đầu, mỗi 30 s) bằng lịch chuẩn.
   // Trợ giảng P2: wander di chuyển, nên vị trí điểm sinh (r = 37 m) được kiểm ngay tick sinh, không kiểm ở cuối.
-  const g = createGame({ seed: 3, tuning: T, scenario: { random_motes: false } });
+  // Bóng wander nay tới được Mây và kết thúc ván trước tick 2220; cho Mây bất tử vì test này chỉ kiểm lịch sinh.
+  const g = createGame({ seed: 3, tuning: T, scenario: { random_motes: false, player: { invuln_ticks: 100000 } } });
   const sp = [];
   for (let i = 0; i < 300 + 480 * 6; i++) {
     for (const e of step(g, idle)) {
