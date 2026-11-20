@@ -92,7 +92,7 @@ export function createGame({ seed, tuning, scenario = {}, night = 1 }) {
       pos: [...map.start], vel: [0, 0, 0], grounded: true, facing: [0, 1],
       flames: T.flames, carried: 0, lights: 0,
       invuln: 0, dashCd: 0, pulseCd: 0, charm: 0,
-      dash: 0, dashDir: [0, 0], launch: null, fallWait: 0, fallen: false,
+      dash: 0, airDashed: false, dashDir: [0, 0], launch: null, fallWait: 0, fallen: false,
     },
     lanterns: map.lanterns.map((l) => ({ id: l.id, pos: [...l.pos], lit: false, deposited: 0, fuel: 0, everLit: false, relit: 0 })),
     motes: [], shades: [], drifters: [], charms: [],
@@ -584,8 +584,11 @@ function movePlayer(g, input, wasPressed, ev) {
   const wl = Math.hypot(wx, wz);
   if (wl > 1e-9) p.facing = [wx / wl, wz / wl];
 
-  // Lướt
-  if (wasPressed('dash') && p.dash === 0 && p.dashCd <= 0) {
+  // Lướt. Trên không chỉ được lướt 1 lần cho tới khi chạm đất; nếu không, Bùa Gió (bỏ hồi chiêu)
+  // + lướt giữ độ cao cho phép lướt nối tiếp để bay lơ lửng mãi trên biển.
+  if (p.grounded) p.airDashed = false;
+  if (wasPressed('dash') && p.dash === 0 && p.dashCd <= 0 && !(p.airDashed && !p.grounded)) {
+    if (!p.grounded) p.airDashed = true;
     p.dash = sec(T.dash_duration_s);
     p.dashDir = wl > 1e-9 ? [wx / wl, wz / wl] : [...p.facing];
     p.dashCd = p.charm > 0 ? 0 : sec(T.dash_cooldown_s);

@@ -66,6 +66,17 @@ test('Bùa Gió: nhặt C1, tốc độ 7.2 m/s, hồi xuất hiện 45 s', () =
   assert.equal(snap(60).charms[0].available, false);
 });
 
+test('Bùa Gió + lướt liên tục trên biển: chỉ lướt 1 lần trên không, vẫn rơi', () => {
+  // Lỗi cũ: Bùa Gió bỏ hồi chiêu, lướt trên không giữ độ cao, nên lướt nối tiếp làm Mây bay lơ lửng mãi trên biển.
+  const frames = [];
+  for (let t = 0; t < 300; t += 2) frames.push({ tick: t, move: [1, 0], dash: true }, { tick: t + 1, move: [1, 0], dash: false });
+  const { L, ev } = run({ ticks: 300, every: 1, scenario: { ...off, player: { pos: [39.5, 0, 0], charm_ticks: 600 } }, frames });
+  const fall = ev('player_hit').find((e) => e.data.by === 'fall');
+  assert.ok(fall, 'phải rơi khỏi đảo');
+  const airDashes = ev('dash').filter((e) => { const s = L.find((l) => l.type === 'snapshot' && l.tick === e.tick - 1); return s && !s.player.grounded; });
+  assert.ok(airDashes.length <= 1, `lướt trên không ${airDashes.length} lần`);
+});
+
 test('Gió Lạc: đuổi khi mang >= 5, cướp 3; Tỏa Sáng lúc flee làm thả lại', () => {
   const { ev } = run({ night: 2, ticks: 40, scenario: { ...off, player: { carried: 6 }, drifters: [{ id: 'D1', pos: [3, 1.5, 0] }] }, frames: [{ tick: 30, pulse: true }] });
   assert.deepEqual(ev('drifter_steal')[0].data, { drifter_id: 'D1', amount: 3, carried: 3 });

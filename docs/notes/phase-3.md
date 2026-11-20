@@ -58,3 +58,7 @@ Không test nào bị `skip`.
     - mất focus (`blur`, tab ẩn) thì xóa phím đang giữ và tự tạm dừng;
     - thêm phím lướt F để khỏi phải bấm Shift liên tục.
   - Sim và đầu ra headless không đổi.
+- **Lỗi Bùa Gió bay lơ lửng** (AI tìm ra khi điều tra lỗi Shift).
+  - Lỗi: Bùa Gió bỏ hồi chiêu Lướt, còn lướt trên không giữ độ cao. Lướt nối tiếp ở Đêm 2 đưa Mây ra tới x = 178 trên biển mà không rơi.
+  - Giả định mới: mỗi lần ở trên không chỉ lướt 1 lần, chạm đất hoặc hồi sinh thì được lướt lại. Luật "lướt trên không giữ độ cao" giữ nguyên.
+  - Scenario "Bùa Gió + lướt liên tục trên biển" được viết trước, chạy đỏ ("phải rơi khỏi đảo"), rồi mới sửa `src/sim/game.js`. Không test cũ nào phải đổi.

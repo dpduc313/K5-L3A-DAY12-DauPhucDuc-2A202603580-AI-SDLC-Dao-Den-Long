@@ -21,7 +21,7 @@ node src/headless.js --seed 1 --night 1 --ticks 600 --out out.jsonl [--scenario 
 | W A S D | đi theo hướng camera |
 | Kéo chuột / ← → | xoay camera (độ nhạy chỉnh trong Cài đặt) |
 | Space | nhảy |
-| F hoặc Shift | lướt (14 m/s trong 0.2 s, hồi 1.5 s). Nên dùng F: trên Windows, bấm Shift 5 lần sẽ mở hộp thoại Sticky Keys |
+| F hoặc Shift | lướt (14 m/s trong 0.2 s, hồi 1.5 s; trên không chỉ lướt được 1 lần tới khi chạm đất). Nên dùng F: trên Windows, bấm Shift 5 lần sẽ mở hộp thoại Sticky Keys |
 | E | nạp đom đóm vào đèn gần nhất trong 2 m: thắp đèn tắt, hoặc châm dầu đèn đang sáng |
 | Q | tỏa sáng: tốn 3 đom đóm, choáng Bóng Mực trong 5 m, hồi 3 s |
 | Esc / P | tạm dừng (Tiếp tục / Chơi lại Đêm / Cài đặt / Về menu) |
