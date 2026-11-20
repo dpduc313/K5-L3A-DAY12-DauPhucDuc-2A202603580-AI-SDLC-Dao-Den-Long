@@ -1,0 +1,184 @@
+TAP version 13
+# Subtest: tat dinh: cung seed cho output giong het
+ok 1 - tat dinh: cung seed cho output giong het
+  ---
+  duration_ms: 503.1519
+  type: 'test'
+  ...
+# Subtest: file inputs sai dinh dang thi exit 2
+ok 2 - file inputs sai dinh dang thi exit 2
+  ---
+  duration_ms: 183.1057
+  type: 'test'
+  ...
+# Subtest: nhat dom dom, nap va thap den, dong end cuoi cung
+ok 3 - nhat dom dom, nap va thap den, dong end cuoi cung
+  ---
+  duration_ms: 84.7723
+  type: 'test'
+  ...
+# Subtest: so snapshot va --ticks N chay dung N buoc
+ok 4 - so snapshot va --ticks N chay dung N buoc
+  ---
+  duration_ms: 83.0438
+  type: 'test'
+  ...
+# Subtest: contract có đủ trường bắt buộc và đúng 5 đèn
+ok 5 - contract có đủ trường bắt buộc và đúng 5 đèn
+  ---
+  duration_ms: 3.7612
+  type: 'test'
+  ...
+# Subtest: di chuyển theo công thức quay cam_yaw_deg = 90: move [0,1] đi về +X
+ok 6 - di chuyển theo công thức quay cam_yaw_deg = 90: move [0,1] đi về +X
+  ---
+  duration_ms: 5.7011
+  type: 'test'
+  ...
+# Subtest: vector move dài hơn 1 được chuẩn hóa
+ok 7 - vector move dài hơn 1 được chuẩn hóa
+  ---
+  duration_ms: 0.771
+  type: 'test'
+  ...
+# Subtest: không nhặt quá carry_capacity
+ok 8 - không nhặt quá carry_capacity
+  ---
+  duration_ms: 0.7122
+  type: 'test'
+  ...
+# Subtest: nạp đủ lantern_cost thì thắp đèn, thắp hết thì thắng với lý do all_lit
+ok 9 - nạp đủ lantern_cost thì thắp đèn, thắp hết thì thắng với lý do all_lit
+  ---
+  duration_ms: 2.3837
+  type: 'test'
+  ...
+# Subtest: dựng scenario với lit:true không cộng điểm
+ok 10 - dựng scenario với lit:true không cộng điểm
+  ---
+  duration_ms: 0.4052
+  type: 'test'
+  ...
+# Subtest: nút chỉ kích hoạt khi false -> true (giữ nút không nạp lần hai)
+ok 11 - nút chỉ kích hoạt khi false -> true (giữ nút không nạp lần hai)
+  ---
+  duration_ms: 0.6623
+  type: 'test'
+  ...
+# Subtest: tỏa sáng làm choáng Bóng Mực trong pulse_radius và đẩy ra pulse_push_m
+ok 12 - tỏa sáng làm choáng Bóng Mực trong pulse_radius và đẩy ra pulse_push_m
+  ---
+  duration_ms: 1.2878
+  type: 'test'
+  ...
+# Subtest: Bóng Mực không vào safe_radius của đèn đã thắp
+ok 13 - Bóng Mực không vào safe_radius của đèn đã thắp
+  ---
+  duration_ms: 7.0583
+  type: 'test'
+  ...
+# Subtest: bị chạm: mất 1 lửa, rơi floor(carried*ratio), có invuln_s
+ok 14 - bị chạm: mất 1 lửa, rơi floor(carried*ratio), có invuln_s
+  ---
+  duration_ms: 2.4859
+  type: 'test'
+  ...
+# Subtest: hết lửa thì thua no_flames
+ok 15 - hết lửa thì thua no_flames
+  ---
+  duration_ms: 0.7456
+  type: 'test'
+  ...
+# Subtest: hết giờ thì thua dawn; time_left_s theo scenario
+ok 16 - hết giờ thì thua dawn; time_left_s theo scenario
+  ---
+  duration_ms: 0.7423
+  type: 'test'
+  ...
+# Subtest: lịch sinh Bóng Mực Đêm 1: 2 con ở tick 300, rồi mỗi 480 tick, tối đa 6
+ok 17 - lịch sinh Bóng Mực Đêm 1: 2 con ở tick 300, rồi mỗi 480 tick, tối đa 6
+  ---
+  duration_ms: 50.3177
+  type: 'test'
+  ...
+# Subtest: night_start và các trường snapshot v1.1
+ok 18 - night_start và các trường snapshot v1.1
+  ---
+  duration_ms: 139.5547
+  type: 'test'
+  ...
+# Subtest: Lướt: 14 m/s trong 0.2 s, phát event dash
+ok 19 - Lướt: 14 m/s trong 0.2 s, phát event dash
+  ---
+  duration_ms: 139.687
+  type: 'test'
+  ...
+# Subtest: Tạm dừng: tick tăng, sim_tick đứng, state paused
+ok 20 - Tạm dừng: tick tăng, sim_tick đứng, state paused
+  ---
+  duration_ms: 125.4324
+  type: 'test'
+  ...
+# Subtest: Rơi khỏi đảo: -1 lửa, mất hết đom đóm, hồi sinh ở điểm xuất phát với bất tử
+ok 21 - Rơi khỏi đảo: -1 lửa, mất hết đom đóm, hồi sinh ở điểm xuất phát với bất tử
+  ---
+  duration_ms: 115.3937
+  type: 'test'
+  ...
+# Subtest: Bục nhảy Đêm 2: bay sang đảo B và đáp đất
+ok 22 - Bục nhảy Đêm 2: bay sang đảo B và đáp đất
+  ---
+  duration_ms: 97.1606
+  type: 'test'
+  ...
+# Subtest: Bùa Gió: nhặt C1, tốc độ 7.2 m/s, hồi xuất hiện 45 s
+ok 23 - Bùa Gió: nhặt C1, tốc độ 7.2 m/s, hồi xuất hiện 45 s
+  ---
+  duration_ms: 88.0336
+  type: 'test'
+  ...
+# Subtest: Gió Lạc: đuổi khi mang >= 5, cướp 3; Tỏa Sáng lúc flee làm thả lại
+ok 24 - Gió Lạc: đuổi khi mang >= 5, cướp 3; Tỏa Sáng lúc flee làm thả lại
+  ---
+  duration_ms: 82.7173
+  type: 'test'
+  ...
+# Subtest: Gió mạnh Đêm 3: bật ở sim_tick 1800
+ok 25 - Gió mạnh Đêm 3: bật ở sim_tick 1800
+  ---
+  duration_ms: 92.0504
+  type: 'test'
+  ...
+# Subtest: Vùng an toàn: đèn vừa thắp đẩy Bóng Mực ra 6 m trong 30 tick, không gây hit
+ok 26 - Vùng an toàn: đèn vừa thắp đẩy Bóng Mực ra 6 m trong 30 tick, không gây hit
+  ---
+  duration_ms: 90.8857
+  type: 'test'
+  ...
+# Subtest: Bóng Mực gây hit thì chuyển recoil và lùi 2 m trong 60 tick
+ok 27 - Bóng Mực gây hit thì chuyển recoil và lùi 2 m trong 60 tick
+  ---
+  duration_ms: 92.0545
+  type: 'test'
+  ...
+# Subtest: Điểm chuẩn: +10 mỗi đom đóm nạp, +100 đèn, thưởng thắng floor(giây)x2 + 50xlửa
+ok 28 - Điểm chuẩn: +10 mỗi đom đóm nạp, +100 đèn, thưởng thắng floor(giây)x2 + 50xlửa
+  ---
+  duration_ms: 79.6139
+  type: 'test'
+  ...
+# Subtest: Đom đóm: 20 lúc đầu, thêm 1 ở tick 240
+ok 29 - Đom đóm: 20 lúc đầu, thêm 1 ở tick 240
+  ---
+  duration_ms: 88.5331
+  type: 'test'
+  ...
+1..29
+# tests 29
+# suites 0
+# pass 29
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1381.7761
