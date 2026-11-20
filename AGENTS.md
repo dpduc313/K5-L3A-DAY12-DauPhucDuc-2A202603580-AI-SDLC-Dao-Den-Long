@@ -19,6 +19,7 @@ Game 3D, Node.js (JS thuần, ESM) + Three.js. Đề gốc: `docs/de-bai/`. Yêu
 - Mỗi luật mới: viết scenario trong `tests/scenarios.test.js` trước, chạy cho đỏ, rồi mới code.
 - Kỳ vọng test sai thì sửa kèm comment lý do; không tắt test, không viết test luôn đạt, không sửa tay output.
 - Tính năng sáng tạo không được đổi đầu ra headless.
+- Chỉ commit khi **mã thoát** của `npm test` là 0 (`if npm test; then git commit ...`). Không nối `npm test | grep ... && git commit`: grep thành công cả khi có `not ok` (đã xảy ra ở 812f562).
 
 ## Harness
 - Stop hook `.claude/hooks/stop-tests.mjs`: chạy `npm test` khi agent định dừng; đỏ thì chặn (exit 2).
