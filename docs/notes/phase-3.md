@@ -50,3 +50,11 @@ Không test nào bị `skip`.
   2. Tạm ghi debug vào `data-dbg` của mũi tên, rồi `chrome --headless --dump-dom`: `L3 1.320 1.125 1.022`. Đèn gần nhất là **L3**, cách 24.98 m < 25 m, nằm sau lưng camera (z > 1) ở phía +X (bên trái màn hình). Vậy mũi tên ở dưới bên trái là đúng.
 
   Bài học: trước khi "sửa" một lỗi hiển thị, phải đo xem nó có thật không. Đã gỡ dòng debug; giữ `camera.updateMatrixWorld()` trước khi chiếu.
+- **Lỗi "bấm Shift nhiều lần thì game hiện bảng chơi lại"** (người dùng báo, sau tag phase-3).
+  - Sim không lỗi: bấm lướt mỗi 4 tick suốt 900 tick ở cả 3 Đêm, không có exception, không có NaN.
+  - Nguyên nhân: bấm Shift 5 lần thì Windows mở hộp thoại Sticky Keys và lấy focus. Trình duyệt không nhận `keyup`, nên phím đi bị kẹt.
+  - Mô phỏng phím đi bị giữ trên sim: Mây rơi khỏi đảo 3 lần rồi thua `no_flames` trong khoảng 11–47 s ở 8/9 trường hợp. Màn kết quả "Chơi lại Đêm này" chính là "pop up" người dùng thấy.
+  - Sửa ở `src/web/main.js`:
+    - mất focus (`blur`, tab ẩn) thì xóa phím đang giữ và tự tạm dừng;
+    - thêm phím lướt F để khỏi phải bấm Shift liên tục.
+  - Sim và đầu ra headless không đổi.

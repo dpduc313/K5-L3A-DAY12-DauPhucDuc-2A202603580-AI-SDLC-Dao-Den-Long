@@ -165,6 +165,15 @@ addEventListener('keydown', (e) => {
   if ((e.code === 'Escape' || e.code === 'KeyP') && mode === 'play') pauseTap = true;
 });
 addEventListener('keyup', (e) => keys.delete(e.code));
+// Bấm Shift 5 lần, Windows bật hộp thoại Sticky Keys và lấy mất focus. Khi đó trình duyệt
+// không nhận keyup, phím W (hoặc Shift) bị "kẹt" nên Mây tự chạy ra mép đảo, rơi 3 lần và thua.
+// Mất focus thì xóa mọi phím đang giữ và tự tạm dừng.
+function releaseAll() {
+  keys.clear(); dragging = false;
+  if (mode === 'play' && game && !game.paused) pauseTap = true;
+}
+addEventListener('blur', releaseAll);
+document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
 renderer.domElement.addEventListener('mousedown', () => (dragging = true));
 addEventListener('mouseup', () => (dragging = false));
 addEventListener('mousemove', (e) => { if (dragging) yaw -= e.movementX * settings.sens; });
@@ -175,7 +184,7 @@ function readInput() {
   const x = (keys.has('KeyA') ? 1 : 0) - (keys.has('KeyD') ? 1 : 0);
   const z = (keys.has('KeyW') ? 1 : 0) - (keys.has('KeyS') ? 1 : 0);
   const pause = pauseTap; pauseTap = false;
-  return { move: [x, z], cam_yaw_deg: yaw, jump: keys.has('Space'), interact: keys.has('KeyE'), pulse: keys.has('KeyQ'), dash: keys.has('ShiftLeft') || keys.has('ShiftRight'), pause };
+  return { move: [x, z], cam_yaw_deg: yaw, jump: keys.has('Space'), interact: keys.has('KeyE'), pulse: keys.has('KeyQ'), dash: keys.has('ShiftLeft') || keys.has('ShiftRight') || keys.has('KeyF'), pause };
 }
 
 // ---------- Luồng màn hình ----------
