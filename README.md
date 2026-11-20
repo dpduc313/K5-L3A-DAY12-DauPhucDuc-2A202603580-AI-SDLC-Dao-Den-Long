@@ -60,7 +60,7 @@ Lướt mặc định là F, không phải Shift: trên Windows, bấm Shift 5 l
 npm test                                                     # toàn bộ test (luật, headless, sáng tạo, Phase 4)
 node src/headless.js --seed 1 --night 1 --ticks 600 --out out.jsonl [--scenario s.json] [--inputs i.json] [--snapshot-every 10]
 node scripts/bench.mjs --seed 42 --duration 30 --out bench.json
-node --expose-gc --single-threaded --max-semi-space-size=1 src/soak.js --seed 7 --nights 10 --out soak.json
+node --expose-gc --jitless --single-threaded --max-semi-space-size=1 src/soak.js --seed 7 --nights 10 --out soak.json
 ```
 Các lệnh này nằm trong `game.contract.json` (v1.3): `headless_cmd`, `bench_cmd`, `soak_cmd`.
 
@@ -69,7 +69,7 @@ Các lệnh này nằm trong `game.contract.json` (v1.3): `headless_cmd`, `bench
 - `peak_mem_mb`: `null`. Đây là bản web, game chạy trong nhiều tiến trình của trình duyệt (browser, GPU, renderer). Trang web không đọc được RSS của các tiến trình đó, và không có cách đo thống nhất trên cả ba hệ điều hành.
 - Kết quả của tôi (`bench.json`, Intel Iris Plus, i7-1065G7, Windows 11): avg 158.1 FPS, p1 low 76.9 FPS, p95 8.6 ms, load 1193 ms.
 
-**Soak.** Chạy 10 Đêm liên tiếp (1 → 2 → 3 xoay vòng) trong một tiến trình, Đêm thứ i (đếm từ 0) dùng seed 7 + i, input ngẫu nhiên theo seed đúng tỉ lệ của đề. Cờ Node: `--expose-gc` để dọn rác trước khi đo RSS; `--single-threaded --max-semi-space-size=1` để RSS không phình vì luồng biên dịch nền và vùng nhớ trẻ của V8. Tôi đã kiểm tra: không có rò rỉ, heap JS đang dùng giữ ở 4.2–4.6 MB qua 10 Đêm. Kết quả của tôi (`soak.json`): 0 crash, RSS 46.2 → 50.2 MB (×1.09).
+**Soak.** Chạy 10 Đêm liên tiếp (1 → 2 → 3 xoay vòng) trong một tiến trình, Đêm thứ i (đếm từ 0) dùng seed 7 + i, input ngẫu nhiên theo seed đúng tỉ lệ của đề. Cờ Node: `--expose-gc` để dọn rác trước khi đo RSS; `--jitless --single-threaded --max-semi-space-size=1` để RSS không phình vì bộ nhớ native của trình biên dịch V8, luồng nền và vùng nhớ trẻ (không có `--jitless`, CI ubuntu đo ×1.27). Tôi đã kiểm tra: không có rò rỉ, heap JS đang dùng giữ ở 4.2–4.6 MB qua 10 Đêm. Kết quả của tôi (`soak.json`, Windows): 0 crash, RSS 44.4 → 45.9 MB (×1.03), khoảng 3 s.
 
 ## Sáng tạo của tôi
 Chỉ bật trong bản web (`createGame({ creative: true })`). Headless, bench và soak không bật, nên đầu ra headless không đổi (đã so byte với bản trước). Sáng tạo dùng RNG riêng, nên bật lên cũng không làm đổi chuỗi ngẫu nhiên của game gốc. Test: `tests/sang-tao.test.js`.

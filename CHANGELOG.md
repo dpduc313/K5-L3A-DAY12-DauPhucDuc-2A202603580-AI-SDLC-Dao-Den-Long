@@ -3,7 +3,7 @@
 ## [phase-4] — v1.0.0, Ticket-04 "Bình minh: phát hành v1.0.0", Contract v1.3
 
 ### Thêm
-- `contract_version` `"1.3"`; thêm `bench_cmd` (`node scripts/bench.mjs`) và `soak_cmd` (`node --expose-gc --single-threaded --max-semi-space-size=1 src/soak.js`).
+- `contract_version` `"1.3"`; thêm `bench_cmd` (`node scripts/bench.mjs`) và `soak_cmd` (`node --expose-gc --jitless --single-threaded --max-semi-space-size=1 src/soak.js`). Thêm `--jitless` sau khi CI ubuntu đo ×1.27 (vượt ngưỡng 1.2) vì bộ nhớ native của trình biên dịch V8; heap JS không tăng.
 - **Đổi `run_cmd`** từ `npm run dev` sang `node scripts/play.mjs`: npm nuốt cờ `--export-leaderboard` nếu không có `--`, nên `<run_cmd> --export-leaderboard out.json` không chạy được với lệnh cũ. `npm run dev` vẫn dùng được khi phát triển.
 - Cảnh benchmark chuẩn trong sim (`createGame({ bench: true })`) và bản web (`?bench=1`), bộ chạy `scripts/bench.mjs`.
 - Soak test `src/soak.js`.
