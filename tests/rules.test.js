@@ -103,9 +103,17 @@ test('hết giờ thì thua dawn; time_left_s theo scenario', () => {
 
 test('lịch sinh Bóng Mực Đêm 1: 2 con ở tick 300, rồi mỗi 480 tick, tối đa 6', () => {
   // Ticket-02 thay lịch Phase 1 (2 con lúc đầu, mỗi 30 s) bằng lịch chuẩn.
+  // Trợ giảng P2: wander di chuyển, nên vị trí điểm sinh (r = 37 m) được kiểm ngay tick sinh, không kiểm ở cuối.
   const g = createGame({ seed: 3, tuning: T, scenario: { random_motes: false } });
-  const ev = runSteps(g, 300 + 480 * 6);
-  const sp = ev.filter((e) => e.name === 'shade_spawned').map((e) => [e.tick, e.data.id]);
+  const sp = [];
+  for (let i = 0; i < 300 + 480 * 6; i++) {
+    for (const e of step(g, idle)) {
+      if (e.name !== 'shade_spawned') continue;
+      sp.push([e.tick, e.data.id]);
+      const s = g.shades.find((x) => x.id === e.data.id);
+      assert.ok(Math.abs(Math.hypot(s.pos[0], s.pos[2]) - 37) < 1e-6);
+      assert.equal(s.state, 'spawning');
+    }
+  }
   assert.deepEqual(sp, [[300, 'S1'], [300, 'S2'], [780, 'S3'], [1260, 'S4'], [1740, 'S5'], [2220, 'S6']]);
-  for (const s of g.shades) assert.ok(Math.abs(Math.hypot(s.pos[0], s.pos[2]) - 37) < 1e-6);
 });

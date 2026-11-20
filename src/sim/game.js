@@ -28,6 +28,8 @@ const LOSE_M = 18;
 const SHADE_FIRST_TICK = 300;
 const SHADE_MIN_DIST = 15;
 const SHADE_Y = 1.0;
+const SPAWNING_TICKS = 180; // trợ giảng P2: spawning kéo dài 3 s
+const WANDER_SPEED = 1.5;
 const CHARM_TICKS = 600;
 const CHARM_RESPAWN = 2700;
 const CHARM_SPEED = 7.2;
@@ -357,6 +359,14 @@ export function step(g, input) {
       const mv = Math.min(d, speed * DT);
       s.pos[0] += ((p.pos[0] - s.pos[0]) / d) * mv;
       s.pos[2] += ((p.pos[2] - s.pos[2]) / d) * mv;
+    } else if (s.state === 'wander') {
+      // Trợ giảng P2: wander di chuyển ngẫu nhiên. Giả định: 1.5 m/s tới một điểm sinh đom đóm ngẫu nhiên (theo seed).
+      if (!s.target || Math.hypot(s.target[0] - s.pos[0], s.target[1] - s.pos[2]) < 0.5) {
+        s.target = map.motePoints[Math.floor(g.rng() * map.motePoints.length)];
+      }
+      const tx = s.target[0] - s.pos[0]; const tz = s.target[1] - s.pos[2]; const tl = Math.hypot(tx, tz);
+      const mv = Math.min(tl, WANDER_SPEED * DT);
+      if (tl > 0) { s.pos[0] += (tx / tl) * mv; s.pos[2] += (tz / tl) * mv; }
     }
     if (!s.expel) blockSafe(g, s);
   }
@@ -405,7 +415,7 @@ export function step(g, input) {
       const valid = map.shadePoints.filter(([x, z]) => Math.hypot(x - p.pos[0], z - p.pos[2]) >= SHADE_MIN_DIST);
       if (!valid.length) break;
       const [x, z] = valid[Math.floor(g.rng() * valid.length)];
-      const s = { id: newShadeId(g), pos: [x, (map.ground(x, z) ?? 0) + SHADE_Y, z], state: 'spawning', left: 1, push: null, expel: null };
+      const s = { id: newShadeId(g), pos: [x, (map.ground(x, z) ?? 0) + SHADE_Y, z], state: 'spawning', left: SPAWNING_TICKS, push: null, expel: null };
       g.shades.push(s);
       ev('shade_spawned', { id: s.id });
     }
@@ -568,7 +578,7 @@ export function snapshot(g) {
     player: {
       pos: p.pos.map(r3), vel: p.vel.map(r3), grounded: p.grounded,
       flames: p.flames, carried: p.carried,
-      invuln: p.invuln > 0,
+      invuln: r3(p.invuln / TICK_HZ), // trợ giảng P2: số giây
       dash_cd_s: r3(p.dashCd / TICK_HZ), pulse_cd_s: r3(p.pulseCd / TICK_HZ), charm_s: r3(p.charm / TICK_HZ),
     },
     lanterns: g.lanterns.map((l) => ({ id: l.id, pos: l.pos.map(r3), lit: l.lit, deposited: l.deposited })),

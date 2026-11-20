@@ -48,7 +48,7 @@ test('Rơi khỏi đảo: -1 lửa, mất hết đom đóm, hồi sinh ở đi�
   const { ev, snap } = run({ ticks: 200, every: 200, scenario: { ...off, player: { pos: [39.5, 0, 0], carried: 4 } }, frames: [{ tick: 0, move: [1, 0] }, { tick: 10, move: [0, 0] }] });
   assert.deepEqual(ev('player_hit')[0].data, { by: 'fall', flames: 2, dropped: 0, lost: 4 });
   assert.deepEqual(snap(200).player.pos, [0, 0, 0]);
-  assert.equal(snap(200).player.invuln, true);
+  assert.ok(snap(200).player.invuln > 0 && snap(200).player.invuln <= 1.5); // trợ giảng P2: invuln là số giây
   assert.equal(snap(200).player.carried, 0);
 });
 
