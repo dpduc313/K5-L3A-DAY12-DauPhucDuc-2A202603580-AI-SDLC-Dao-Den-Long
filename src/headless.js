@@ -76,14 +76,17 @@ export function validateScenario(s) {
       if (l.pos !== undefined && !isVec3(l.pos)) throw new FormatError('scenario.lanterns[].pos');
       if (l.lit !== undefined && typeof l.lit !== 'boolean') throw new FormatError('scenario.lanterns[].lit');
       if (l.deposited !== undefined && !(Number.isInteger(l.deposited) && l.deposited >= 0)) throw new FormatError('scenario.lanterns[].deposited');
+      if (l.fuel !== undefined && !(isNum(l.fuel) && l.fuel >= 0 && l.fuel <= 100)) throw new FormatError('scenario.lanterns[].fuel phai trong [0, 100]');
+      if (l.ever_lit !== undefined && typeof l.ever_lit !== 'boolean') throw new FormatError('scenario.lanterns[].ever_lit');
     }
   }
-  for (const k of ['invuln_ticks', 'dash_cd_ticks', 'pulse_cd_ticks', 'charm_ticks'])
+  for (const k of ['invuln_ticks', 'dash_cd_ticks', 'pulse_cd_ticks', 'charm_ticks', 'successful_lights'])
     if (s.player && s.player[k] !== undefined && !(Number.isInteger(s.player[k]) && s.player[k] >= 0)) throw new FormatError(`scenario.player.${k}`);
   for (const k of ['random_drifters', 'wind_enabled'])
     if (s[k] !== undefined && typeof s[k] !== 'boolean') throw new FormatError(`scenario.${k} phai la boolean`);
   if (s.shades !== undefined) for (const x of s.shades) {
-    if (x.state !== undefined && !['spawning', 'wander', 'chase', 'recoil', 'stunned'].includes(x.state)) throw new FormatError('scenario.shades[].state');
+    if (x.state !== undefined && !['spawning', 'wander', 'chase', 'recoil', 'stunned', 'drain'].includes(x.state)) throw new FormatError('scenario.shades[].state');
+    if (x.target_lantern_id !== undefined && x.target_lantern_id !== null && typeof x.target_lantern_id !== 'string') throw new FormatError('scenario.shades[].target_lantern_id');
     if (x.state_ticks_left !== undefined && !(Number.isInteger(x.state_ticks_left) && x.state_ticks_left >= 0)) throw new FormatError('scenario.shades[].state_ticks_left');
   }
   if (s.drifters !== undefined) {

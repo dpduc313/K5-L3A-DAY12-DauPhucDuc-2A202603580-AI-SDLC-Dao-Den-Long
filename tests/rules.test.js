@@ -12,7 +12,8 @@ const runSteps = (g, n, inp = idle) => { const ev = []; for (let i = 0; i < n; i
 
 test('contract có đủ trường bắt buộc và đúng 5 đèn', () => {
   for (const k of ['contract_version', 'team', 'build_cmd', 'run_cmd', 'headless_cmd']) assert.ok(contract[k], k);
-  assert.equal(contract.contract_version, '1.1'); // Ticket-02: contract lên v1.1
+  assert.equal(contract.contract_version, '1.2'); // Ticket-03: contract lên v1.2
+  for (const k of ['fuel_max', 'fuel_decay_per_s', 'fuel_per_mote', 'relight_cost', 'win_ratio', 'drain_per_s', 'low_fuel_threshold', 'capacity_max']) assert.ok(k in T, k);
   for (const k of ['dash_speed', 'dash_duration_s', 'dash_cooldown_s', 'night2_duration_s', 'night3_duration_s']) assert.ok(k in T, k);
   const need = ['player_speed', 'carry_capacity', 'lantern_cost', 'lantern_count_night1', 'pickup_radius', 'interact_radius', 'pulse_cost', 'pulse_radius', 'night1_duration_s', 'flames', 'invuln_s', 'hit_drop_ratio', 'pulse_stun_s', 'pulse_push_m', 'pulse_cooldown_s', 'safe_radius', 'shade_speed', 'shade_hit_radius', 'fall_enabled'];
   for (const k of need) assert.ok(k in T, k);
@@ -40,14 +41,15 @@ test('không nhặt quá carry_capacity', () => {
   assert.equal(g.player.carried, T.carry_capacity);
 });
 
-test('nạp đủ lantern_cost thì thắp đèn, thắp hết thì thắng với lý do all_lit', () => {
+// Ticket-03 [THAY THẾ] "thắng ngay khi tất cả đèn sáng": test cũ kiểm all_lit được đổi thành kiểm KHÔNG thắng sớm.
+test('nạp đủ lantern_cost thì thắp đèn; thắp hết đèn không kết thúc Đêm', () => {
   const lanterns = ['L1', 'L2', 'L3', 'L4', 'L5'].map((id) => ({ id, lit: id !== 'L1' }));
   lanterns[0].pos = [0, 0, 1];
   const g = createGame({ seed: 1, tuning: T, scenario: { ...base, lanterns, player: { carried: T.lantern_cost } } });
   const ev = runSteps(g, 1, { ...idle, interact: true });
-  assert.deepEqual(ev.map((e) => e.name), ['deposit', 'lantern_lit', 'game_over']);
-  assert.deepEqual(ev[2].data, { result: 'won', reason: 'all_lit' });
-  assert.equal(g.state, 'won');
+  assert.deepEqual(ev.map((e) => e.name), ['deposit', 'lantern_lit']);
+  assert.deepEqual(ev[1].data, { lantern_id: 'L1', relight: false });
+  assert.equal(g.state, 'playing');
 });
 
 test('dựng scenario với lit:true không cộng điểm', () => {

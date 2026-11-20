@@ -30,6 +30,13 @@ const SHADE_MIN_DIST = 15;
 const SHADE_Y = 1.0;
 const SPAWNING_TICKS = 180; // trợ giảng P2: spawning kéo dài 3 s
 const WANDER_SPEED = 1.5;
+// Ticket-03: dầu tính bằng đơn vị nguyên 1/60 để không sai số số thực.
+const F = 60;
+const DRAIN_RANGE = 2;
+const DRAIN_TO_CHASE = 6;
+const DRAIN_EVENT_EVERY = 60;
+const RELIGHT_SCORE = 40;
+const STUN_DRAIN_SCORE = 15;
 const CHARM_TICKS = 600;
 const CHARM_RESPAWN = 2700;
 const CHARM_SPEED = 7.2;
@@ -83,11 +90,11 @@ export function createGame({ seed, tuning, scenario = {}, night = 1 }) {
     score: 0,
     player: {
       pos: [...map.start], vel: [0, 0, 0], grounded: true, facing: [0, 1],
-      flames: T.flames, carried: 0,
+      flames: T.flames, carried: 0, lights: 0,
       invuln: 0, dashCd: 0, pulseCd: 0, charm: 0,
       dash: 0, dashDir: [0, 0], launch: null, fallWait: 0, fallen: false,
     },
-    lanterns: map.lanterns.map((l) => ({ id: l.id, pos: [...l.pos], lit: false, deposited: 0 })),
+    lanterns: map.lanterns.map((l) => ({ id: l.id, pos: [...l.pos], lit: false, deposited: 0, fuel: 0, everLit: false, relit: 0 })),
     motes: [], shades: [], drifters: [], charms: [],
     nextMote: 1, nextShade: 1, nextDrifter: 1,
     randomMotes: scenario.random_motes ?? true,
@@ -108,6 +115,7 @@ export function createGame({ seed, tuning, scenario = {}, night = 1 }) {
     if (s.dash_cd_ticks !== undefined) p.dashCd = s.dash_cd_ticks;
     if (s.pulse_cd_ticks !== undefined) p.pulseCd = s.pulse_cd_ticks;
     if (s.charm_ticks !== undefined) p.charm = s.charm_ticks;
+    if (s.successful_lights !== undefined) p.lights = s.successful_lights;
     const gy = groundAt(g, p.pos[0], p.pos[2]);
     p.grounded = gy !== null && Math.abs(p.pos[1] - gy) < 1e-6;
   }
@@ -119,6 +127,10 @@ export function createGame({ seed, tuning, scenario = {}, night = 1 }) {
       if (u.pos) l.pos = [...u.pos];
       if (u.deposited !== undefined) l.deposited = u.deposited;
       if (u.lit !== undefined) l.lit = u.lit;
+      if (u.ever_lit !== undefined) l.everLit = u.ever_lit;
+      // Ticket-03: lit:true mà không có fuel thì fuel = 100; đèn tắt có fuel 0.
+      l.fuel = l.lit ? Math.round((u.fuel ?? T.fuel_max) * F) : 0;
+      if (l.lit) l.everLit = u.ever_lit ?? true;
     }
   }
 
@@ -137,7 +149,7 @@ export function createGame({ seed, tuning, scenario = {}, night = 1 }) {
       g.shades.push({
         id, pos: [s.pos[0], s.pos[1] ?? SHADE_Y, s.pos[2]],
         state: s.state ?? 'wander', left: s.state_ticks_left ?? 0,
-        push: null, expel: null,
+        push: null, expel: null, lantern: s.target_lantern_id ?? null, drainTicks: 0,
       });
     }
   }
@@ -223,6 +235,21 @@ export function step(g, input) {
     if (g.wind.active && --g.wind.left <= 0) g.wind.active = false;
     if (g.simTick % WIND_EVERY === 0) { g.wind = { active: true, dir: Math.floor(g.rng() * 360), left: WIND_TICKS }; }
   }
+  // Ticket-03 bước 2: trừ dầu (tự hao 1/s + mỗi bóng drain 5/s), rồi đèn fuel <= 0 tắt.
+  const decay = Math.round(T.fuel_decay_per_s);
+  const drainRate = Math.round(T.drain_per_s);
+  for (const l of g.lanterns) if (l.lit) l.fuel -= decay;
+  for (const s of [...g.shades].sort(byId)) {
+    if (s.state !== 'drain') continue;
+    const l = g.lanterns.find((x) => x.id === s.lantern);
+    if (!l || !l.lit) continue;
+    l.fuel -= drainRate;
+    s.drainTicks += 1;
+    if (s.drainTicks % DRAIN_EVENT_EVERY === 0) ev('fuel_drain', { lantern_id: l.id, shade_id: s.id, fuel: fuelOut(l) });
+  }
+  for (const l of g.lanterns) {
+    if (l.lit && l.fuel <= 0) { l.lit = false; l.fuel = 0; l.deposited = 0; ev('lantern_out', { lantern_id: l.id }); }
+  }
 
   // 3. Di chuyển Mây
   if (p.fallWait > 0) {
@@ -237,7 +264,8 @@ export function step(g, input) {
 
   // 4. Nhặt đom đóm và bùa
   if (p.fallWait === 0) {
-    for (let i = 0; i < g.motes.length && p.carried < T.carry_capacity; ) {
+    const cap = capacity(g);
+    for (let i = 0; i < g.motes.length && p.carried < cap; ) {
       const m = g.motes[i];
       if (m.from <= g.tick && distXZ(p.pos, m.pos) <= T.pickup_radius && Math.abs(p.pos[1] - m.pos[1]) <= PICK_DY) {
         g.motes.splice(i, 1);
@@ -255,27 +283,39 @@ export function step(g, input) {
 
   // 5. Nạp đèn
   if (wasPressed('interact') && p.carried > 0 && p.fallWait === 0) {
+    // Ticket-03: chỉ xét đèn nhận được (chưa sáng, hoặc sáng nhưng chưa đầy dầu); gần nhất, bằng nhau thì id nhỏ hơn.
+    const fuelMax = T.fuel_max * F;
+    const refuelNeed = (l) => Math.ceil((fuelMax - l.fuel) / (T.fuel_per_mote * F));
     let best = null; let bestD = Infinity;
     for (const l of g.lanterns) {
-      if (l.lit) continue;
+      if (l.lit && refuelNeed(l) <= 0) continue;
       const d = distXZ(p.pos, l.pos);
       if (d <= T.interact_radius && (d < bestD || (d === bestD && idNum(l.id) < idNum(best.id)))) { best = l; bestD = d; }
     }
-    if (best) {
-      const amount = Math.min(p.carried, T.lantern_cost - best.deposited);
+    if (best && best.lit) {
+      const used = Math.min(p.carried, refuelNeed(best));
+      const wasWeak = best.fuel < T.low_fuel_threshold * F;
+      best.fuel = Math.min(fuelMax, best.fuel + used * T.fuel_per_mote * F);
+      p.carried -= used;
+      g.score += used * T.score.per_mote;
+      ev('refuel', { lantern_id: best.id, amount: used, fuel: fuelOut(best) });
+      if (wasWeak && best.fuel >= T.low_fuel_threshold * F) expelAround(g, best);
+    } else if (best) {
+      const cost = best.everLit ? T.relight_cost : T.lantern_cost;
+      const amount = Math.min(p.carried, cost - best.deposited);
       if (amount > 0) {
         p.carried -= amount;
         best.deposited += amount;
         g.score += amount * T.score.per_mote;
         ev('deposit', { lantern_id: best.id, amount, deposited: best.deposited });
-        if (best.deposited >= T.lantern_cost) {
-          best.lit = true;
-          g.score += T.score.per_lantern;
-          ev('lantern_lit', { lantern_id: best.id });
-          for (const s of g.shades) {
-            const d = distXZ(s.pos, best.pos);
-            if (d < T.safe_radius) s.expel = { lantern: best, left: SAFE_EXPEL_TICKS };
-          }
+        if (best.deposited >= cost) {
+          const relight = best.everLit;
+          best.lit = true; best.fuel = fuelMax; best.everLit = true;
+          if (relight) best.relit += 1;
+          p.lights += 1;
+          g.score += relight ? RELIGHT_SCORE : T.score.per_lantern;
+          ev('lantern_lit', { lantern_id: best.id, relight });
+          expelAround(g, best);
         }
       }
     }
@@ -307,9 +347,11 @@ export function step(g, input) {
         let dx = s.pos[0] - p.pos[0]; let dz = s.pos[2] - p.pos[2];
         const dl = Math.hypot(dx, dz);
         if (dl === 0) { dx = 1; dz = 0; } else { dx /= dl; dz /= dl; }
+        const wasDrain = s.state === 'drain';
         s.state = 'stunned'; s.left = sec(T.pulse_stun_s); s.push = { dir: [dx, dz], left: PULSE_PUSH_TICKS };
+        s.lantern = null; s.drainTicks = 0;
         ids.push(s.id);
-        g.score += T.score.per_stun;
+        g.score += wasDrain ? STUN_DRAIN_SCORE : T.score.per_stun; // Ticket-03: tổng +15 nếu đang drain
       }
     }
     for (const d of g.drifters) {
@@ -353,20 +395,49 @@ export function step(g, input) {
     if (s.expel) continue; // đang bị đèn vừa thắp đẩy ra: không đuổi
     const d = distXZ(s.pos, p.pos);
     const playerTargetable = p.fallWait === 0;
-    if (s.state === 'wander' && playerTargetable && d <= DETECT_M) s.state = 'chase';
+    const low = T.low_fuel_threshold * F;
+    if (s.state === 'drain') {
+      const l = g.lanterns.find((x) => x.id === s.lantern);
+      if (playerTargetable && d <= DRAIN_TO_CHASE) { s.state = 'chase'; s.lantern = null; }
+      else if (!l || !l.lit || l.fuel >= low || distXZ(s.pos, l.pos) > DRAIN_RANGE) { s.state = 'wander'; s.lantern = null; }
+      else continue; // drain: đứng yên, dầu đã bị trừ ở bước 2
+      s.drainTicks = 0;
+    }
+    if (s.state === 'wander' && playerTargetable && d <= DETECT_M) { s.state = 'chase'; s.lantern = null; }
     else if (s.state === 'chase' && (!playerTargetable || d > LOSE_M)) s.state = 'wander';
     if (s.state === 'chase' && d > 0) {
       const mv = Math.min(d, speed * DT);
       s.pos[0] += ((p.pos[0] - s.pos[0]) / d) * mv;
       s.pos[2] += ((p.pos[2] - s.pos[2]) / d) * mv;
     } else if (s.state === 'wander') {
-      // Trợ giảng P2: wander di chuyển ngẫu nhiên. Giả định: 1.5 m/s tới một điểm sinh đom đóm ngẫu nhiên (theo seed).
-      if (!s.target || Math.hypot(s.target[0] - s.pos[0], s.target[1] - s.pos[2]) < 0.5) {
-        s.target = map.motePoints[Math.floor(g.rng() * map.motePoints.length)];
+      // Ticket-03: wander chọn đèn sáng fuel < 30 gần nhất; không có thì đèn tắt gần nhất; không có nữa thì lượn ngẫu nhiên (trợ giảng P2).
+      const near = (pred) => {
+        let best = null; let bd = Infinity;
+        for (const l of g.lanterns) {
+          if (!pred(l)) continue;
+          const ld = distXZ(s.pos, l.pos);
+          if (ld < bd || (ld === bd && idNum(l.id) < idNum(best.id))) { best = l; bd = ld; }
+        }
+        return best;
+      };
+      const forced = s.lantern ? g.lanterns.find((x) => x.id === s.lantern && x.lit && x.fuel < low) : null;
+      const weak = forced || near((l) => l.lit && l.fuel < low);
+      const goal = weak || near((l) => !l.lit);
+      s.lantern = weak ? weak.id : null;
+      let tx; let tz;
+      if (goal && distXZ(s.pos, goal.pos) > DRAIN_RANGE) { tx = goal.pos[0] - s.pos[0]; tz = goal.pos[2] - s.pos[2]; }
+      else if (!goal) {
+        if (!s.target || Math.hypot(s.target[0] - s.pos[0], s.target[1] - s.pos[2]) < 0.5) {
+          s.target = map.motePoints[Math.floor(g.rng() * map.motePoints.length)];
+        }
+        tx = s.target[0] - s.pos[0]; tz = s.target[1] - s.pos[2];
       }
-      const tx = s.target[0] - s.pos[0]; const tz = s.target[1] - s.pos[2]; const tl = Math.hypot(tx, tz);
-      const mv = Math.min(tl, WANDER_SPEED * DT);
-      if (tl > 0) { s.pos[0] += (tx / tl) * mv; s.pos[2] += (tz / tl) * mv; }
+      if (tx !== undefined) {
+        const tl = Math.hypot(tx, tz);
+        const mv = Math.min(tl, WANDER_SPEED * DT);
+        if (tl > 0) { s.pos[0] += (tx / tl) * mv; s.pos[2] += (tz / tl) * mv; }
+      }
+      if (weak && distXZ(s.pos, weak.pos) <= DRAIN_RANGE) { s.state = 'drain'; s.drainTicks = 0; }
     }
     if (!s.expel) blockSafe(g, s);
   }
@@ -426,24 +497,44 @@ export function step(g, input) {
   }
 
   // 11. Thắng / thua
+  // Ticket-03: không còn thắng sớm. Hết lửa luôn thua trước; hết giờ thì thắng nếu số đèn sáng >= ceil(win_ratio × tổng).
   if (p.flames <= 0) end(g, 'lost', 'no_flames', ev);
-  else if (g.lanterns.every((l) => l.lit)) end(g, 'won', 'all_lit', ev);
-  else if (timeLeft(g) <= 1e-9) end(g, 'lost', 'dawn', ev);
+  else if (timeLeft(g) <= 1e-9) {
+    const need = Math.ceil(T.win_ratio * g.lanterns.length - 1e-9);
+    const litNow = g.lanterns.filter((l) => l.lit).length;
+    if (litNow >= need) end(g, 'won', 'dawn_survived', ev);
+    else end(g, 'lost', 'dawn', ev);
+  }
   return events;
 }
 
 function end(g, result, reason, ev) {
   g.state = result;
   if (result === 'won') {
-    g.score += Math.floor(Math.max(0, timeLeft(g)) + 1e-9) * g.T.score.per_second_left;
+    // Ticket-03: mỗi đèn đang sáng +50 + floor(fuel); mỗi Ngọn Lửa +50; bỏ thưởng thời gian.
+    for (const l of g.lanterns) if (l.lit) g.score += 50 + Math.floor(l.fuel / F);
     g.score += g.player.flames * g.T.score.per_flame_left;
   }
   ev('game_over', { result, reason });
 }
 
+export function capacity(g) {
+  return Math.min(g.T.capacity_max, g.T.carry_capacity + 2 * g.player.lights);
+}
+
+function fuelOut(l) {
+  return Math.round((l.fuel / F) * 10) / 10;
+}
+
+function expelAround(g, l) {
+  for (const s of g.shades) {
+    if (distXZ(s.pos, l.pos) < g.T.safe_radius) { s.expel = { lantern: l, left: SAFE_EXPEL_TICKS }; if (s.state === 'drain') { s.state = 'wander'; s.lantern = null; } }
+  }
+}
+
 function blockSafe(g, s) {
   for (const l of g.lanterns) {
-    if (!l.lit) continue;
+    if (!l.lit || l.fuel < g.T.low_fuel_threshold * F) continue; // Ticket-03: fuel < 30 mất vùng an toàn
     const d = distXZ(s.pos, l.pos);
     if (d < g.T.safe_radius) {
       const ux = d === 0 ? 1 : (s.pos[0] - l.pos[0]) / d;
@@ -577,12 +668,12 @@ export function snapshot(g) {
     wind: { active: g.wind.active, dir_deg: g.wind.active ? g.wind.dir : null },
     player: {
       pos: p.pos.map(r3), vel: p.vel.map(r3), grounded: p.grounded,
-      flames: p.flames, carried: p.carried,
+      flames: p.flames, carried: p.carried, capacity: capacity(g),
       invuln: r3(p.invuln / TICK_HZ), // trợ giảng P2: số giây
       dash_cd_s: r3(p.dashCd / TICK_HZ), pulse_cd_s: r3(p.pulseCd / TICK_HZ), charm_s: r3(p.charm / TICK_HZ),
     },
-    lanterns: g.lanterns.map((l) => ({ id: l.id, pos: l.pos.map(r3), lit: l.lit, deposited: l.deposited })),
-    shades: g.shades.map((s) => ({ id: s.id, pos: s.pos.map(r3), state: s.state })),
+    lanterns: g.lanterns.map((l) => ({ id: l.id, pos: l.pos.map(r3), lit: l.lit, deposited: l.deposited, fuel: fuelOut(l), ever_lit: l.everLit, relit_count: l.relit })),
+    shades: g.shades.map((s) => ({ id: s.id, pos: s.pos.map(r3), state: s.state, target_lantern_id: s.lantern ?? null })),
     motes_active: g.motes.length,
     motes: g.motes.map((m) => ({ id: m.id, pos: m.pos.map(r3), kind: m.kind, ttl_s: m.ttl === null ? null : r3(m.ttl / TICK_HZ) })),
     drifters: g.drifters.map((d) => ({ id: d.id, pos: d.pos.map(r3), state: d.state, stolen: d.stolen })),

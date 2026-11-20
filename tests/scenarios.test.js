@@ -95,12 +95,8 @@ test('Bóng Mực gây hit thì chuyển recoil và lùi 2 m trong 60 tick', () 
   assert.equal(snap(61).shades[0].state, 'wander');
 });
 
-test('Điểm chuẩn: +10 mỗi đom đóm nạp, +100 đèn, thưởng thắng floor(giây)x2 + 50xlửa', () => {
-  const lanterns = ['L2', 'L3', 'L4', 'L5'].map((id) => ({ id, lit: true }));
-  const { end, ev } = run({ ticks: 5, scenario: { ...off, player: { pos: [0, 0, 24], carried: 10 }, lanterns } , frames: [{ tick: 0, interact: true }] });
-  assert.deepEqual(ev('game_over')[0].data, { result: 'won', reason: 'all_lit' });
-  assert.equal(end.score, 100 + 100 + 299 * 2 + 150);
-});
+// Đã xóa test "Điểm chuẩn Ticket-02" (+10/đom đóm, thưởng thời gian, thắng all_lit):
+// Ticket-03 [THAY THẾ] toàn bộ công thức điểm và luật thắng. Test thay thế: tests/phase3.test.js.
 
 test('Đom đóm: 20 lúc đầu, thêm 1 ở tick 240', () => {
   const { snap } = run({ ticks: 240, every: 240, scenario: {} , frames: [] });
