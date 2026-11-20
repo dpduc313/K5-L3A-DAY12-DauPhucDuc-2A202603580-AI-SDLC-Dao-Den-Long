@@ -40,8 +40,13 @@ Không test nào bị `skip`.
 | Sức chứa | 10 + 2 × lần thắp, tối đa 20 | đạt |
 | Hiển thị: thanh dầu, nhấp nháy 1 Hz khi < 30, đèn tắt xẹp 20% + vết rách | xem mã `src/web/main.js` | đạt theo mã, **chưa có ảnh** |
 | Chế độ mù màu (#00B3FF, cảnh báo trắng + ⚠, lưu cài đặt) | xem mã | đạt theo mã, **chưa có ảnh** |
-| Mũi tên chỉ đèn ngoài màn hình | ảnh `docs/proof/phase-3/dem1.png` | **chưa đạt**: mũi tên vẫn hiện khi đèn trong màn hình |
+| Mũi tên chỉ đèn ngoài màn hình | ảnh `docs/proof/phase-3/dem1.png` + kiểm tra DOM (xem dưới) | đạt. Lúc tag `phase-3` tôi ghi nhầm là "chưa đạt", xem mục Đánh giá |
 
 ## Đánh giá nhanh
 - AI viết một **test giả** (`assert.ok(end.score >= 0)`) cho trường hợp đèn đầy dầu, vì không dựng được tình huống qua scenario. Tự phát hiện khi đọc lại test, rồi thay bằng test trên sim.
 - AI quên cập nhật validate của headless cho state `drain`, nên scenario hợp lệ bị thoát mã 2. Test scenario phát hiện lỗi này.
+- **AI chẩn đoán sai "lỗi mũi tên"** (sau tag phase-3). AI cho rằng đèn gần nhất lúc xuất phát là L1 (0, 0, 25), đang thấy trên màn hình, nên mũi tên không được hiện. Kiểm lại bằng số đo thay vì nhìn ảnh:
+  1. Tính phép chiếu bằng Node với đúng camera của game: L1 nằm trong màn hình (NDC 0; 0.61).
+  2. Tạm ghi debug vào `data-dbg` của mũi tên, rồi `chrome --headless --dump-dom`: `L3 1.320 1.125 1.022`. Đèn gần nhất là **L3**, cách 24.98 m < 25 m, nằm sau lưng camera (z > 1) ở phía +X (bên trái màn hình). Vậy mũi tên ở dưới bên trái là đúng.
+
+  Bài học: trước khi "sửa" một lỗi hiển thị, phải đo xem nó có thật không. Đã gỡ dòng debug; giữ `camera.updateMatrixWorld()` trước khi chiếu.

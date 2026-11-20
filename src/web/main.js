@@ -358,7 +358,7 @@ function hud(g, lit) {
   const ar = $('arrow');
   if (nearest) {
     const v = new THREE.Vector3(nearest.pos[0], nearest.pos[1] + 3, nearest.pos[2]).project(camera);
-    const behind = v.z > 1;
+    const behind = v.z > 1; // điểm sau lưng camera: đảo hướng để mũi tên chỉ về phía sau
     if (behind || Math.abs(v.x) > 1 || Math.abs(v.y) > 1) {
       let x = behind ? -v.x : v.x; let y = behind ? -v.y : v.y;
       const k = 0.85 / Math.max(Math.abs(x), Math.abs(y), 1e-6); x *= k; y *= k;
