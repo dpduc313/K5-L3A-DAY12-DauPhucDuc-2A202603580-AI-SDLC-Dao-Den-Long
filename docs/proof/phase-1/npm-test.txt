@@ -6,33 +6,111 @@ TAP version 13
 # Subtest: tat dinh: cung seed cho output giong het
 ok 1 - tat dinh: cung seed cho output giong het
   ---
-  duration_ms: 163.729
+  duration_ms: 267.3691
   type: 'test'
   ...
 # Subtest: file inputs sai dinh dang thi exit 2
 ok 2 - file inputs sai dinh dang thi exit 2
   ---
-  duration_ms: 147.8745
+  duration_ms: 263.0906
   type: 'test'
   ...
 # Subtest: nhat dom dom, nap va thap den, dong end cuoi cung
 ok 3 - nhat dom dom, nap va thap den, dong end cuoi cung
   ---
-  duration_ms: 74.4893
+  duration_ms: 101.465
   type: 'test'
   ...
 # Subtest: so snapshot va --ticks N chay dung N buoc
 ok 4 - so snapshot va --ticks N chay dung N buoc
   ---
-  duration_ms: 67.9352
+  duration_ms: 92.7674
   type: 'test'
   ...
-1..4
-# tests 4
+# Subtest: contract có đủ trường bắt buộc và đúng 5 đèn
+ok 5 - contract có đủ trường bắt buộc và đúng 5 đèn
+  ---
+  duration_ms: 4.1255
+  type: 'test'
+  ...
+# Subtest: di chuyển theo công thức quay cam_yaw_deg = 90: move [0,1] đi về +X
+ok 6 - di chuyển theo công thức quay cam_yaw_deg = 90: move [0,1] đi về +X
+  ---
+  duration_ms: 2.8157
+  type: 'test'
+  ...
+# Subtest: vector move dài hơn 1 được chuẩn hóa
+ok 7 - vector move dài hơn 1 được chuẩn hóa
+  ---
+  duration_ms: 0.7299
+  type: 'test'
+  ...
+# Subtest: không nhặt quá carry_capacity
+ok 8 - không nhặt quá carry_capacity
+  ---
+  duration_ms: 1.0279
+  type: 'test'
+  ...
+# Subtest: nạp đủ lantern_cost thì thắp đèn, thắp hết thì thắng với lý do all_lit
+ok 9 - nạp đủ lantern_cost thì thắp đèn, thắp hết thì thắng với lý do all_lit
+  ---
+  duration_ms: 2.5559
+  type: 'test'
+  ...
+# Subtest: dựng scenario với lit:true không cộng điểm
+ok 10 - dựng scenario với lit:true không cộng điểm
+  ---
+  duration_ms: 1.5092
+  type: 'test'
+  ...
+# Subtest: nút chỉ kích hoạt khi false -> true (giữ nút không nạp lần hai)
+ok 11 - nút chỉ kích hoạt khi false -> true (giữ nút không nạp lần hai)
+  ---
+  duration_ms: 0.7577
+  type: 'test'
+  ...
+# Subtest: tỏa sáng làm choáng Bóng Mực trong pulse_radius và đẩy ra pulse_push_m
+ok 12 - tỏa sáng làm choáng Bóng Mực trong pulse_radius và đẩy ra pulse_push_m
+  ---
+  duration_ms: 0.972
+  type: 'test'
+  ...
+# Subtest: Bóng Mực không vào safe_radius của đèn đã thắp
+ok 13 - Bóng Mực không vào safe_radius của đèn đã thắp
+  ---
+  duration_ms: 7.2813
+  type: 'test'
+  ...
+# Subtest: bị chạm: mất 1 lửa, rơi floor(carried*ratio), có invuln_s
+ok 14 - bị chạm: mất 1 lửa, rơi floor(carried*ratio), có invuln_s
+  ---
+  duration_ms: 1.5249
+  type: 'test'
+  ...
+# Subtest: hết lửa thì thua no_flames
+ok 15 - hết lửa thì thua no_flames
+  ---
+  duration_ms: 0.5976
+  type: 'test'
+  ...
+# Subtest: hết giờ thì thua dawn; time_left_s theo scenario
+ok 16 - hết giờ thì thua dawn; time_left_s theo scenario
+  ---
+  duration_ms: 0.5501
+  type: 'test'
+  ...
+# Subtest: random_shades mặc định: Bóng Mực mới sinh theo thời gian và phát shade_spawned
+ok 17 - random_shades mặc định: Bóng Mực mới sinh theo thời gian và phát shade_spawned
+  ---
+  duration_ms: 6.3904
+  type: 'test'
+  ...
+1..17
+# tests 17
 # suites 0
-# pass 4
+# pass 17
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 553.0347
+# duration_ms 925.5617

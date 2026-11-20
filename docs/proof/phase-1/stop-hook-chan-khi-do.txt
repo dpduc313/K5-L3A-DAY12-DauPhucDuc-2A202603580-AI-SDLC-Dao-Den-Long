@@ -1,0 +1,7 @@
+--- stop_hook_active=false
+npm test dang do. Sua cho xanh truoc khi ket thuc, khong sua test cho luon dat.
+  ---
+exit 2
+--- stop_hook_active=true
+{"systemMessage":"CANH BAO: npm test van do sau mot lan chan. Ghi \"chua dat\" vao docs/notes."}
+exit 0

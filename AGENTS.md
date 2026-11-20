@@ -15,3 +15,8 @@ Game 3D, Node.js (JS thuần, ESM). Đề gốc: `docs/de-bai/`. Yêu cầu phas
 - Đổi số trong code thì đổi `game.contract.json` cùng commit.
 - Không sửa tay output, không viết test luôn đạt. Chưa đạt thì ghi "chưa đạt".
 - Tính năng sáng tạo không được đổi đầu ra headless.
+- Web (`src/web/`) chỉ đọc state sim và vẽ; mọi luật nằm trong `src/sim/`.
+
+## Harness
+- Stop hook `.claude/hooks/stop-tests.mjs`: chạy `npm test` khi agent định dừng; đỏ thì chặn (exit 2).
+- Mỗi luật mới phải có test trong `tests/rules.test.js` trước khi viết code.

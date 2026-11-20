@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Đảo Đèn Lồng</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0816; font-family: system-ui, sans-serif; color: #ffe9c4; }
+    #hud { position: fixed; top: 12px; left: 12px; background: rgba(20, 12, 36, .7); padding: 10px 14px; border-radius: 10px; line-height: 1.6; font-size: 15px; pointer-events: none; }
+    #hud b { color: #ffb347; }
+    #help { position: fixed; bottom: 12px; left: 12px; font-size: 13px; opacity: .75; pointer-events: none; }
+    #end { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10, 6, 20, .75); }
+    #end div { text-align: center; background: #1c1230; padding: 28px 40px; border-radius: 14px; border: 1px solid #ffb34766; }
+    #end h1 { margin: 0 0 8px; color: #ffb347; }
+    button { font: inherit; margin-top: 14px; padding: 8px 18px; border-radius: 8px; border: 0; background: #ffb347; color: #2a1640; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="hud"></div>
+  <div id="help">WASD đi · kéo chuột hoặc ←/→ xoay camera · Space nhảy · E nạp đèn · Q tỏa sáng · R chơi lại</div>
+  <div id="end"><div><h1 id="end-title"></h1><p id="end-text"></p><button id="replay">Chơi lại (R)</button></div></div>
+  <script type="module" src="/src/web/main.js"></script>
+</body>
+</html>
