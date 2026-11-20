@@ -16,7 +16,7 @@ Game 3D góc nhìn thứ ba (Three.js). Mây, người giữ đèn đội nón l
 npm ci
 node scripts/play.mjs        # build bản web, mở game ở http://127.0.0.1:8080/
 ```
-`node scripts/play.mjs` là `run_cmd` trong `game.contract.json`. Thêm `--port N` để đổi cổng, `--no-open` để không tự mở trình duyệt. Khi phát triển có thể dùng `npm run dev` (Vite, tải lại nóng; bảng xếp hạng khi đó lưu trong trình duyệt).
+`node scripts/play.mjs` là `run_cmd` trong `game.contract.json`. Nếu cổng 8080 bận (ví dụ Apache/XAMPP) hoặc bị Windows chặn, máy chủ tự thử 8081–8089 rồi một cổng trống bất kỳ; địa chỉ thật được in ra terminal. Thêm `--port N` để chọn cổng, `--no-open` để không tự mở trình duyệt. Khi phát triển có thể dùng `npm run dev` (Vite, tải lại nóng; bảng xếp hạng khi đó lưu trong trình duyệt).
 
 Bản phát hành (không cần `npm ci`): tải `dao-den-long-v1.0.0-web.zip` ở Release v1.0.0, giải nén, chạy `node scripts/serve.mjs`.
 

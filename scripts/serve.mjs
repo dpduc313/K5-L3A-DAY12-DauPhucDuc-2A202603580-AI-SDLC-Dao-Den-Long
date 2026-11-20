@@ -29,7 +29,25 @@ export function startServer({ dir = join(root, 'dist'), port = 0, onBench } = {}
       res.end(data);
     } catch { res.writeHead(404); res.end('not found'); }
   });
-  return new Promise((ok) => server.listen(port, '127.0.0.1', () => ok({ server, url: `http://127.0.0.1:${server.address().port}/` })));
+  // Cổng bận hoặc bị chặn (EADDRINUSE/EACCES, ví dụ 8080 đang chạy Apache/XAMPP, hoặc nằm trong dải Hyper-V giữ):
+  // thử 10 cổng kế tiếp, cuối cùng để hệ điều hành chọn cổng trống.
+  const tries = port === 0 ? [0] : [...Array.from({ length: 10 }, (_, i) => port + i), 0];
+  return new Promise((ok, fail) => {
+    const attempt = (i) => {
+      const onErr = (e) => {
+        if ((e.code === 'EADDRINUSE' || e.code === 'EACCES') && i + 1 < tries.length) {
+          console.log(`Cổng ${tries[i]} không dùng được (${e.code}), thử cổng khác…`);
+          attempt(i + 1);
+        } else fail(e);
+      };
+      server.once('error', onErr);
+      server.listen(tries[i], '127.0.0.1', () => {
+        server.off('error', onErr);
+        ok({ server, url: `http://127.0.0.1:${server.address().port}/` });
+      });
+    };
+    attempt(0);
+  });
 }
 
 export function openBrowser(url) {
