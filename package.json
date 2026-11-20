@@ -1,0 +1,12 @@
+{
+  "name": "dao-den-long",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "headless": "node src/headless.js",
+    "dev": "echo \"Ban render 3D chua co o phase-1\" && exit 1"
+  }
+}
