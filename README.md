@@ -46,4 +46,6 @@ Mọi số trong `game.contract.json` khớp số chuẩn Ticket-02/03. `per_sec
 - Harness AI: `AGENTS.md` (`CLAUDE.md` trỏ tới nó); Stop hook `.claude/hooks/stop-tests.mjs` chặn agent kết thúc khi `npm test` đỏ; skill `.claude/skills/verify` để chạy kiểm chứng và lưu bằng chứng trước khi gắn tag.
 
 ## Sáng tạo của tôi
-(chưa có)
+Chỉ bật trong bản web (`createGame({ creative: true })`). Headless, bench và soak không bật, nên đầu ra headless không đổi (đã so byte với bản trước). Sáng tạo dùng RNG riêng, nên bật lên cũng không làm đổi chuỗi ngẫu nhiên của game gốc. Test: `tests/sang-tao.test.js`.
+- **Đom Đóm Chúa**: xuất hiện lần đầu lúc 15 s, sau đó mỗi 30 s, tối đa 1 con, tự bay mất sau 20 s (nhấp nháy 3 s cuối). Nhặt được +5 đom đóm (tới sức chứa) và +25 điểm ngay. Đầy sức chứa thì không nhặt được.
+- **Đuốc**: cắm trên đảo lần đầu lúc 30 s, sau đó mỗi 45 s, tối đa 1 cây. Nhặt thì Mây cầm đuốc 30 s. Đuốc tự Tỏa Sáng như phím Q lúc nhặt và mỗi 3 s: choáng, đẩy Bóng Mực và tính điểm như Q, nhưng không tốn đom đóm và không đụng hồi chiêu Q.

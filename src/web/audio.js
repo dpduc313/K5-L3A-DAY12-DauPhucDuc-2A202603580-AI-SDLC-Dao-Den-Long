@@ -29,6 +29,8 @@ export function makeAudio(getVolume) {
     spawn: () => tone(90, 0.6, 'sawtooth', 0.12, -40),
     tick: () => tone(1000, 0.05, 'square', 0.1),
     wind: () => tone(200, 1.5, 'sawtooth', 0.05, 200),
+    king: () => [880, 1175, 1568].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'sine', 0.2, 200), i * 70)),
+    torch: () => { tone(220, 0.5, 'triangle', 0.25, 300); setTimeout(() => tone(440, 0.4, 'triangle', 0.2, 200), 100); },
   };
   return {
     unlock: () => ensure(),

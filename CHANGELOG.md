@@ -7,6 +7,7 @@
 
 ### Khác
 - Bản web: mất focus thì xóa phím đang giữ và tự tạm dừng; thêm phím lướt F.
+- Sáng tạo (chỉ bản web, headless không đổi): Đom Đóm Chúa và Đuốc. Xem README "Sáng tạo của tôi".
 
 ## [phase-3] — Ticket-03 "Đèn cạn dầu", Contract v1.2
 

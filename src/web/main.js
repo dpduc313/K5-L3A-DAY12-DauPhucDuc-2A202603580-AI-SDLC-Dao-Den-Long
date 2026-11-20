@@ -10,6 +10,7 @@ const C = {
   sky: 0x0e1430, fog: 0x1b2350, grass: 0x2f5d50, sand: 0xc9b48a, wood: 0x6b4a2f, sea: 0x12384a,
   lit: 0xffb347, core: 0xffe9b0, off: 0x5b5f6e, moteCore: 0xfff6c2, moteHalo: 0xffe58a,
   shade: 0x120a1a, shadeEdge: 0x7a3cff, shadeStun: 0x3a3450, coat: 0xe8e2d0, scarf: 0xc8102e, gold: 0xf2c14e, drifter: 0x8fa3b8,
+  king: 0xffd23f, kingHalo: 0xff9f1c, torch: 0xff7a1a,
 };
 const STORY = {
   1: 'Ông Đăng: "Sương đen đã nuốt Đảo Bến. Gom đom đóm, thắp lại năm ngọn đèn trước khi trời sáng, cháu nhé."',
@@ -104,13 +105,25 @@ const may = new THREE.Group();
   lampLight.position.copy(lamp.position);
   may.add(body, scarf, head, hat, lamp, lampLight);
 }
+// Sáng tạo: đuốc Mây cầm tay trái, chỉ hiện khi đang cầm
+const heldTorch = new THREE.Group();
+{
+  const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.8, 8), std(C.wood));
+  stick.position.y = 0.4;
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.4, 10), new THREE.MeshBasicMaterial({ color: C.torch }));
+  flame.position.y = 0.95; flame.name = 'flame';
+  heldTorch.add(stick, flame);
+  heldTorch.position.set(-0.5, 0.7, 0.15);
+  heldTorch.visible = false;
+  may.add(heldTorch);
+}
 scene.add(may);
 const pulseRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48), new THREE.MeshBasicMaterial({ color: C.core, transparent: true, side: THREE.DoubleSide }));
 pulseRing.rotation.x = -Math.PI / 2; pulseRing.visible = false;
 scene.add(pulseRing);
 
 // ---------- Thực thể đồng bộ theo id ----------
-const pools = { motes: new Map(), shades: new Map(), lanterns: new Map(), drifters: new Map(), charms: new Map() };
+const pools = { motes: new Map(), shades: new Map(), lanterns: new Map(), drifters: new Map(), charms: new Map(), kings: new Map(), torches: new Map() };
 function sync(map, items, create) {
   const alive = new Set();
   for (const it of items) { alive.add(it.id); if (!map.has(it.id)) { const m = create(it); map.set(it.id, m); scene.add(m); } }
@@ -120,6 +133,28 @@ function clearPools() { for (const p of Object.values(pools)) { for (const m of 
 const moteGeo = new THREE.SphereGeometry(0.12, 8, 6);
 const haloGeo = new THREE.SphereGeometry(0.3, 8, 6);
 const makeMote = () => { const g = new THREE.Group(); g.add(new THREE.Mesh(moteGeo, new THREE.MeshBasicMaterial({ color: C.moteCore })), new THREE.Mesh(haloGeo, new THREE.MeshBasicMaterial({ color: C.moteHalo, transparent: true, opacity: 0.35 }))); return g; };
+// Đom Đóm Chúa: lõi vàng to, quầng cam, vòng vương miện xoay
+const makeKing = () => {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 8), new THREE.MeshBasicMaterial({ color: C.king })));
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(0.6, 12, 8), new THREE.MeshBasicMaterial({ color: C.kingHalo, transparent: true, opacity: 0.3 })));
+  const crown = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.04, 6, 24), new THREE.MeshBasicMaterial({ color: C.gold }));
+  crown.rotation.x = Math.PI / 2; crown.name = 'crown';
+  g.add(crown);
+  return g;
+};
+// Đuốc cắm trên đất
+const makeTorch = () => {
+  const g = new THREE.Group();
+  const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.2, 8), std(C.wood));
+  stick.position.y = 0.6;
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.55, 10), new THREE.MeshBasicMaterial({ color: C.torch }));
+  flame.position.y = 1.45; flame.name = 'flame';
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), new THREE.MeshBasicMaterial({ color: C.torch, transparent: true, opacity: 0.25 }));
+  halo.position.y = 1.4;
+  g.add(stick, flame, halo);
+  return g;
+};
 const makeShade = () => {
   const g = new THREE.Group();
   const body = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 12), std(C.shade, { emissive: C.shadeEdge, emissiveIntensity: 0.15 }));
@@ -200,7 +235,7 @@ function intro(n) {
 }
 function startNight() {
   clearPools(); buildTerrain(night);
-  game = createGame({ seed: (Math.random() * 2 ** 31) | 0, tuning: T, scenario: {}, night });
+  game = createGame({ seed: (Math.random() * 2 ** 31) | 0, tuning: T, scenario: {}, night, creative: true });
   yaw = 0; mode = 'play'; show(null); audio.music(true);
 }
 $('b-start').onclick = () => { audio.unlock(); total = 0; intro(1); };
@@ -218,12 +253,18 @@ $('sens').oninput = (e) => { settings.sens = Number(e.target.value); saveSetting
 $('cb').onchange = (e) => { settings.cb = e.target.checked; saveSettings(); };
 $('b-close').onclick = () => show(settingsBack);
 
+let msg = ''; let msgUntil = 0;
+const banner = (text) => { msg = text; msgUntil = performance.now() + 2500; };
 function onEvents(evs) {
   for (const e of evs) {
     switch (e.name) {
       case 'mote_picked': audio.sfx('pick'); break;
       case 'lantern_lit': audio.sfx('lit'); break;
       case 'pulse': audio.sfx('pulse'); pulseAnim = 1; pulseRing.position.set(game.player.pos[0], game.player.pos[1] + 0.05, game.player.pos[2]); break;
+      case 'torch_pulse': audio.sfx('pulse'); pulseAnim = 1; pulseRing.position.set(game.player.pos[0], game.player.pos[1] + 0.05, game.player.pos[2]); break;
+      case 'king_picked': audio.sfx('king'); banner(`Đom Đóm Chúa! +${e.data.amount} đom đóm, +25 điểm`); break;
+      case 'torch_picked': audio.sfx('torch'); banner('Cầm Đuốc: tự tỏa sáng mỗi 3 giây trong 30 giây'); break;
+      case 'torch_out': banner('Đuốc đã tàn'); break;
       case 'player_hit': audio.sfx('hit'); break;
       case 'dash': audio.sfx('dash'); break;
       case 'shade_spawned': audio.sfx('spawn'); break;
@@ -308,6 +349,23 @@ function draw(t) {
   for (const d of g.drifters) { const m = pools.drifters.get(d.id); m.position.set(d.pos[0], d.pos[1], d.pos[2]); m.rotation.y = t * 4; m.material.opacity = 1; }
   sync(pools.charms, g.charms, makeCharm);
   for (const c of g.charms) { const m = pools.charms.get(c.id); m.position.set(c.pos[0], c.pos[1] + 1, c.pos[2]); m.rotation.y = t * 2; m.visible = c.available; }
+  if (g.creative) {
+    sync(pools.kings, g.creative.kings, makeKing);
+    for (const k of g.creative.kings) {
+      const m = pools.kings.get(k.id);
+      m.position.set(k.pos[0], k.pos[1] + 0.9 + Math.sin(t * 2) * 0.25, k.pos[2]);
+      m.getObjectByName('crown').rotation.z = t * 3;
+      m.visible = k.ttl > 180 || Math.floor(t * 6) % 2 === 0; // nhấp nháy 3 s cuối trước khi bay mất
+    }
+    sync(pools.torches, g.creative.torches, makeTorch);
+    for (const tc of g.creative.torches) {
+      const m = pools.torches.get(tc.id);
+      m.position.set(tc.pos[0], tc.pos[1], tc.pos[2]);
+      m.getObjectByName('flame').scale.y = 1 + Math.sin(t * 12) * 0.15;
+    }
+    heldTorch.visible = p.torch > 0 && (p.torch > 300 || Math.floor(t * 6) % 2 === 0); // nhấp nháy 5 s cuối
+    heldTorch.getObjectByName('flame').scale.y = 1 + Math.sin(t * 12) * 0.15;
+  }
 
   // Ánh sáng môi trường = 0.15 + 0.55 × (đèn sáng / tổng đèn)
   ambient.intensity = 0.15 + 0.55 * (lit / g.lanterns.length);
@@ -340,6 +398,7 @@ function hud(g, lit) {
   const cap = capacity(g);
   const need = Math.ceil(T.win_ratio * g.lanterns.length - 1e-9);
   $('topright').innerHTML += `<br><small>Cần ${need} đèn sáng lúc bình minh</small>`;
+  if (p.torch > 0) $('topright').innerHTML += `<br>🔥 Đuốc <b>${Math.ceil(p.torch / TICK_HZ)}s</b>`;
   $('bar').innerHTML = Array.from({ length: cap }, (_, i) => `<i class="${i < p.carried ? 'on' : ''}"></i>`).join('') + `<span style="margin-left:8px">${p.carried}/${cap}</span>`;
   const cd = (el, ticks, total) => { el.querySelector('span').style.height = `${total ? (100 * ticks) / total : 0}%`; };
   cd($('cd-dash'), p.dashCd, T.dash_cooldown_s * TICK_HZ);
@@ -380,7 +439,9 @@ function hud(g, lit) {
 
   const bn = $('banner');
   const warn = g.windEnabled && (g.simTick % 1800) >= 1680;
-  if (warn && !g.wind.active) { bn.style.display = 'block'; bn.textContent = '🍃 Gió sắp nổi…'; if (g.simTick % 1800 === 1680) audio.sfx('wind'); }
+  if (warn && g.simTick % 1800 === 1680) audio.sfx('wind');
+  if (performance.now() < msgUntil) { bn.style.display = 'block'; bn.textContent = msg; }
+  else if (warn && !g.wind.active) { bn.style.display = 'block'; bn.textContent = '🍃 Gió sắp nổi…'; }
   else if (g.wind.active) { bn.style.display = 'block'; bn.textContent = '🍃 Gió mạnh!'; }
   else bn.style.display = 'none';
 }

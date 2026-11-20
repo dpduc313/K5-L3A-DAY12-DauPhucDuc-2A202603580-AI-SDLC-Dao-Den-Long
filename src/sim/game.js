@@ -54,6 +54,18 @@ const DRIFTER_Y = 1.5;
 const WIND_EVERY = 1800;
 const WIND_TICKS = 300;
 const WIND_SPEED = 2;
+// Sáng tạo (chỉ bật khi createGame({ creative: true }), headless không bật).
+const KING_FIRST = 900;
+const KING_EVERY = 1800;
+const KING_TTL = 1200;
+const KING_MAX = 1;
+const KING_MOTES = 5;
+const KING_SCORE = 25;
+const TORCH_FIRST = 1800;
+const TORCH_EVERY = 2700;
+const TORCH_MAX = 1;
+const TORCH_TICKS = 1800;
+const TORCH_PULSE_EVERY = 180;
 
 export function mulberry32(seed) {
   let a = seed >>> 0;
@@ -75,7 +87,7 @@ const dist3 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 const idNum = (id) => { const m = /(\d+)$/.exec(id); return m ? Number(m[1]) : Infinity; };
 const byId = (a, b) => idNum(a.id) - idNum(b.id) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
-export function createGame({ seed, tuning, scenario = {}, night = 1 }) {
+export function createGame({ seed, tuning, scenario = {}, night = 1, creative = false }) {
   const T = tuning;
   const map = MAPS[night];
   const rng = mulberry32(seed);
@@ -91,7 +103,7 @@ export function createGame({ seed, tuning, scenario = {}, night = 1 }) {
     player: {
       pos: [...map.start], vel: [0, 0, 0], grounded: true, facing: [0, 1],
       flames: T.flames, carried: 0, lights: 0,
-      invuln: 0, dashCd: 0, pulseCd: 0, charm: 0,
+      invuln: 0, dashCd: 0, pulseCd: 0, charm: 0, torch: 0, torchPulse: 0,
       dash: 0, airDashed: false, dashDir: [0, 0], launch: null, fallWait: 0, fallen: false,
     },
     lanterns: map.lanterns.map((l) => ({ id: l.id, pos: [...l.pos], lit: false, deposited: 0, fuel: 0, everLit: false, relit: 0 })),
@@ -103,6 +115,8 @@ export function createGame({ seed, tuning, scenario = {}, night = 1 }) {
     windEnabled: (scenario.wind_enabled ?? true) && map.wind,
     wind: { active: false, dir: 0, left: 0 },
     prevInput: { jump: false, interact: false, pulse: false, dash: false, pause: false },
+    // RNG riêng để bật sáng tạo không làm đổi chuỗi ngẫu nhiên của game gốc.
+    creative: creative ? { rng: mulberry32((seed ^ 0x5bd1e995) >>> 0), kings: [], torches: [], nextKing: 1, nextTorch: 1 } : null,
   };
   const p = g.player;
 
@@ -231,6 +245,10 @@ export function step(g, input) {
   for (const m of g.motes) if (m.ttl !== null) m.ttl -= 1;
   g.motes = g.motes.filter((m) => m.ttl === null || m.ttl > 0);
   for (const c of g.charms) if (!c.available && c.respawn > 0 && --c.respawn === 0) c.available = true;
+  if (g.creative) {
+    for (const k of g.creative.kings) k.ttl -= 1;
+    g.creative.kings = g.creative.kings.filter((k) => k.ttl > 0);
+  }
   if (g.windEnabled) {
     if (g.wind.active && --g.wind.left <= 0) g.wind.active = false;
     if (g.simTick % WIND_EVERY === 0) { g.wind = { active: true, dir: Math.floor(g.rng() * 360), left: WIND_TICKS }; }
@@ -279,6 +297,7 @@ export function step(g, input) {
         ev('charm_picked', { charm_id: c.id, charm_ticks: CHARM_TICKS });
       }
     }
+    if (g.creative) pickCreative(g, ev);
   }
 
   // 5. Nạp đèn
@@ -339,32 +358,13 @@ export function step(g, input) {
   if (wasPressed('pulse') && p.pulseCd <= 0 && p.carried >= T.pulse_cost && p.fallWait === 0) {
     p.carried -= T.pulse_cost;
     p.pulseCd = sec(T.pulse_cooldown_s);
-    const c = [p.pos[0], p.pos[1] + PULSE_CENTER_DY, p.pos[2]];
-    const ids = [];
-    for (const s of [...g.shades].sort(byId)) {
-      if (s.state === 'spawning') continue;
-      if (dist3(c, s.pos) <= T.pulse_radius) {
-        let dx = s.pos[0] - p.pos[0]; let dz = s.pos[2] - p.pos[2];
-        const dl = Math.hypot(dx, dz);
-        if (dl === 0) { dx = 1; dz = 0; } else { dx /= dl; dz /= dl; }
-        const wasDrain = s.state === 'drain';
-        s.state = 'stunned'; s.left = sec(T.pulse_stun_s); s.push = { dir: [dx, dz], left: PULSE_PUSH_TICKS };
-        s.lantern = null; s.drainTicks = 0;
-        ids.push(s.id);
-        g.score += wasDrain ? STUN_DRAIN_SCORE : T.score.per_stun; // Ticket-03: tổng +15 nếu đang drain
-      }
-    }
-    for (const d of g.drifters) {
-      if (dist3(c, d.pos) > T.pulse_radius) continue;
-      if (d.state === 'chase') { d.state = 'flee'; d.left = DRIFTER_FLEE_TICKS; d.used = true; }
-      else if (d.state === 'flee' && d.stolen > 0) {
-        const amount = d.stolen;
-        dropMotes(g, d.pos, amount, DROP_TTL);
-        d.stolen = 0; d.left = Math.min(d.left, DRIFTER_DROP_GONE);
-        ev('drifter_drop', { drifter_id: d.id, amount });
-      }
-    }
-    ev('pulse', { stunned_ids: ids });
+    ev('pulse', { stunned_ids: pulseAt(g, ev) });
+  }
+  // Sáng tạo: Đuốc tự tỏa sáng như Q (không tốn đom đóm, không đụng hồi chiêu Q) lúc nhặt và mỗi 3 s.
+  if (g.creative && p.torch > 0) {
+    if (p.torchPulse <= 0 && p.fallWait === 0) { p.torchPulse = TORCH_PULSE_EVERY; ev('torch_pulse', { stunned_ids: pulseAt(g, ev) }); }
+    if (p.torchPulse > 0) p.torchPulse -= 1;
+    if (--p.torch === 0) { p.torchPulse = 0; ev('torch_out', {}); }
   }
 
   // 8. Di chuyển Bóng Mực và Gió Lạc
@@ -495,6 +495,7 @@ export function step(g, input) {
     const [x, z] = map.shadePoints[Math.floor(g.rng() * map.shadePoints.length)];
     g.drifters.push({ id: `D${g.nextDrifter++}`, pos: [x, (map.ground(x, z) ?? 0) + DRIFTER_Y, z], state: 'idle', stolen: 0, used: false, left: 0, target: null });
   }
+  if (g.creative) spawnCreative(g);
 
   // 11. Thắng / thua
   // Ticket-03: không còn thắng sớm. Hết lửa luôn thua trước; hết giờ thì thắng nếu số đèn sáng >= ceil(win_ratio × tổng).
@@ -516,6 +517,70 @@ function end(g, result, reason, ev) {
     g.score += g.player.flames * g.T.score.per_flame_left;
   }
   ev('game_over', { result, reason });
+}
+
+// Hiệu ứng Tỏa Sáng quanh Mây: choáng + đẩy Bóng Mực, làm Gió Lạc bỏ chạy hoặc thả đom đóm. Trả về id bị choáng.
+function pulseAt(g, ev) {
+  const T = g.T; const p = g.player;
+  const c = [p.pos[0], p.pos[1] + PULSE_CENTER_DY, p.pos[2]];
+  const ids = [];
+  for (const s of [...g.shades].sort(byId)) {
+    if (s.state === 'spawning') continue;
+    if (dist3(c, s.pos) <= T.pulse_radius) {
+      let dx = s.pos[0] - p.pos[0]; let dz = s.pos[2] - p.pos[2];
+      const dl = Math.hypot(dx, dz);
+      if (dl === 0) { dx = 1; dz = 0; } else { dx /= dl; dz /= dl; }
+      const wasDrain = s.state === 'drain';
+      s.state = 'stunned'; s.left = sec(T.pulse_stun_s); s.push = { dir: [dx, dz], left: PULSE_PUSH_TICKS };
+      s.lantern = null; s.drainTicks = 0;
+      ids.push(s.id);
+      g.score += wasDrain ? STUN_DRAIN_SCORE : T.score.per_stun; // Ticket-03: tổng +15 nếu đang drain
+    }
+  }
+  for (const d of g.drifters) {
+    if (dist3(c, d.pos) > T.pulse_radius) continue;
+    if (d.state === 'chase') { d.state = 'flee'; d.left = DRIFTER_FLEE_TICKS; d.used = true; }
+    else if (d.state === 'flee' && d.stolen > 0) {
+      const amount = d.stolen;
+      dropMotes(g, d.pos, amount, DROP_TTL);
+      d.stolen = 0; d.left = Math.min(d.left, DRIFTER_DROP_GONE);
+      ev('drifter_drop', { drifter_id: d.id, amount });
+    }
+  }
+  return ids;
+}
+
+function pickCreative(g, ev) {
+  const p = g.player; const cr = g.creative; const T = g.T;
+  const near = (pos) => distXZ(p.pos, pos) <= T.pickup_radius && Math.abs(p.pos[1] - pos[1]) <= PICK_DY;
+  for (let i = 0; i < cr.kings.length; ) {
+    const k = cr.kings[i]; const room = capacity(g) - p.carried;
+    if (room > 0 && near(k.pos)) {
+      const amount = Math.min(KING_MOTES, room);
+      cr.kings.splice(i, 1);
+      p.carried += amount; g.score += KING_SCORE;
+      ev('king_picked', { king_id: k.id, amount, carried: p.carried });
+    } else i++;
+  }
+  for (let i = 0; i < cr.torches.length; ) {
+    const t = cr.torches[i];
+    if (near(t.pos)) {
+      cr.torches.splice(i, 1);
+      p.torch = TORCH_TICKS;
+      ev('torch_picked', { torch_id: t.id, torch_s: TORCH_TICKS / TICK_HZ });
+    } else i++;
+  }
+}
+
+function spawnCreative(g) {
+  const cr = g.creative; const map = g.map; const t = g.simTick;
+  const at = () => { const [x, z] = map.motePoints[Math.floor(cr.rng() * map.motePoints.length)]; return [x, map.ground(x, z) ?? 0, z]; };
+  if (t >= KING_FIRST && (t - KING_FIRST) % KING_EVERY === 0 && cr.kings.length < KING_MAX) {
+    cr.kings.push({ id: `K${cr.nextKing++}`, pos: at(), ttl: KING_TTL });
+  }
+  if (t >= TORCH_FIRST && (t - TORCH_FIRST) % TORCH_EVERY === 0 && cr.torches.length < TORCH_MAX) {
+    cr.torches.push({ id: `T${cr.nextTorch++}`, pos: at() });
+  }
 }
 
 export function capacity(g) {
@@ -660,7 +725,7 @@ function movePlayer(g, input, wasPressed, ev) {
 
 export function snapshot(g) {
   const p = g.player;
-  return {
+  const s = {
     type: 'snapshot',
     tick: g.tick,
     sim_tick: g.simTick,
@@ -682,4 +747,13 @@ export function snapshot(g) {
     drifters: g.drifters.map((d) => ({ id: d.id, pos: d.pos.map(r3), state: d.state, stolen: d.stolen })),
     charms: g.charms.map((c) => ({ id: c.id, available: c.available, respawn_s: r3(c.respawn / TICK_HZ) })),
   };
+  // Sáng tạo: chỉ có khi bật, để snapshot headless giữ nguyên.
+  if (g.creative) {
+    s.creative = {
+      kings: g.creative.kings.map((k) => ({ id: k.id, pos: k.pos.map(r3), ttl_s: r3(k.ttl / TICK_HZ) })),
+      torches: g.creative.torches.map((t) => ({ id: t.id, pos: t.pos.map(r3) })),
+      torch_s: r3(p.torch / TICK_HZ),
+    };
+  }
+  return s;
 }
