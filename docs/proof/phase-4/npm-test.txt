@@ -1,0 +1,364 @@
+TAP version 13
+# Subtest: tat dinh: cung seed cho output giong het
+ok 1 - tat dinh: cung seed cho output giong het
+  ---
+  duration_ms: 697.786
+  type: 'test'
+  ...
+# Subtest: file inputs sai dinh dang thi exit 2
+ok 2 - file inputs sai dinh dang thi exit 2
+  ---
+  duration_ms: 201.2734
+  type: 'test'
+  ...
+# Subtest: nhat dom dom, nap va thap den, dong end cuoi cung
+ok 3 - nhat dom dom, nap va thap den, dong end cuoi cung
+  ---
+  duration_ms: 126.5314
+  type: 'test'
+  ...
+# Subtest: so snapshot va --ticks N chay dung N buoc
+ok 4 - so snapshot va --ticks N chay dung N buoc
+  ---
+  duration_ms: 128.2051
+  type: 'test'
+  ...
+# Subtest: dầu hao 1/s; hết dầu thì tắt, deposited = 0, ever_lit giữ, phát lantern_out
+ok 5 - dầu hao 1/s; hết dầu thì tắt, deposited = 0, ever_lit giữ, phát lantern_out
+  ---
+  duration_ms: 258.405
+  type: 'test'
+  ...
+# Subtest: đèn lit:true không có fuel thì mặc định 100; snapshot có fuel, ever_lit, relit_count, capacity
+ok 6 - đèn lit:true không có fuel thì mặc định 100; snapshot có fuel, ever_lit, relit_count, capacity
+  ---
+  duration_ms: 201.9701
+  type: 'test'
+  ...
+# Subtest: châm dầu: used = min(mang, ceil((100-fuel)/10)), +5 điểm mỗi đom đóm, phát refuel
+ok 7 - châm dầu: used = min(mang, ceil((100-fuel)/10)), +5 điểm mỗi đom đóm, phát refuel
+  ---
+  duration_ms: 165.5232
+  type: 'test'
+  ...
+# Subtest: đèn đầy dầu (used = 0) không được chọn khi tương tác: không sự kiện, không điểm
+ok 8 - đèn đầy dầu (used = 0) không được chọn khi tương tác: không sự kiện, không điểm
+  ---
+  duration_ms: 4.3943
+  type: 'test'
+  ...
+# Subtest: thắp lại đèn từng sáng chỉ cần 5, +40 điểm, relight: true, relit_count tăng
+ok 9 - thắp lại đèn từng sáng chỉ cần 5, +40 điểm, relight: true, relit_count tăng
+  ---
+  duration_ms: 109.7715
+  type: 'test'
+  ...
+# Subtest: Bóng Mực wander đi tới đèn fuel < 30, hút 5/s ở trạng thái drain, phát fuel_drain mỗi 60 tick
+ok 10 - Bóng Mực wander đi tới đèn fuel < 30, hút 5/s ở trạng thái drain, phát fuel_drain mỗi 60 tick
+  ---
+  duration_ms: 112.6542
+  type: 'test'
+  ...
+# Subtest: đúng 30 vẫn còn vùng an toàn; dưới 30 thì mất
+ok 11 - đúng 30 vẫn còn vùng an toàn; dưới 30 thì mất
+  ---
+  duration_ms: 253.5035
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng trúng Bóng Mực đang drain: +15
+ok 12 - Tỏa Sáng trúng Bóng Mực đang drain: +15
+  ---
+  duration_ms: 102.5569
+  type: 'test'
+  ...
+# Subtest: bình minh: đủ 3/5 đèn sáng thì thắng dawn_survived, điểm = 50 + floor(fuel) mỗi đèn + 50 mỗi lửa
+ok 13 - bình minh: đủ 3/5 đèn sáng thì thắng dawn_survived, điểm = 50 + floor(fuel) mỗi đèn + 50 mỗi lửa
+  ---
+  duration_ms: 91.4275
+  type: 'test'
+  ...
+# Subtest: bình minh mà dưới ngưỡng (2/5) thì thua dawn; thắp hết sớm không kết thúc
+ok 14 - bình minh mà dưới ngưỡng (2/5) thì thua dawn; thắp hết sớm không kết thúc
+  ---
+  duration_ms: 182.4197
+  type: 'test'
+  ...
+# Subtest: ngưỡng thắng Đêm 2 là 4/6 và Đêm 3 là 5/7
+ok 15 - ngưỡng thắng Đêm 2 là 4/6 và Đêm 3 là 5/7
+  ---
+  duration_ms: 387.1441
+  type: 'test'
+  ...
+# Subtest: sức chứa tối đa 20; successful_lights đặt qua scenario
+ok 16 - sức chứa tối đa 20; successful_lights đặt qua scenario
+  ---
+  duration_ms: 81.372
+  type: 'test'
+  ...
+# Subtest: contract v1.3 có bench_cmd và soak_cmd, giữ các khóa cũ
+ok 17 - contract v1.3 có bench_cmd và soak_cmd, giữ các khóa cũ
+  ---
+  duration_ms: 1.9113
+  type: 'test'
+  ...
+# Subtest: cảnh bench: Đêm 1, đúng 200 Bóng Mực wander, 100 đom đóm, L1–L3 sáng fuel 100, Mây ở (0,0,0)
+ok 18 - cảnh bench: Đêm 1, đúng 200 Bóng Mực wander, 100 đom đóm, L1–L3 sáng fuel 100, Mây ở (0,0,0)
+  ---
+  duration_ms: 6.16
+  type: 'test'
+  ...
+# Subtest: cảnh bench tắt sinh thêm, sát thương, nhặt, hao dầu, kết thúc Đêm; bóng vẫn di chuyển
+ok 19 - cảnh bench tắt sinh thêm, sát thương, nhặt, hao dầu, kết thúc Đêm; bóng vẫn di chuyển
+  ---
+  duration_ms: 3278.8098
+  type: 'test'
+  ...
+# Subtest: cảnh bench tất định theo seed
+ok 20 - cảnh bench tất định theo seed
+  ---
+  duration_ms: 197.3413
+  type: 'test'
+  ...
+# Subtest: soak 3 Đêm: không crash, đủ kết quả, có số đo bộ nhớ
+ok 21 - soak 3 Đêm: không crash, đủ kết quả, có số đo bộ nhớ
+  ---
+  duration_ms: 276.1048
+  type: 'test'
+  ...
+# Subtest: bảng xếp hạng: tên 3–12 ký tự [A-Za-z0-9_] (cho phép chữ tiếng Việt)
+ok 22 - bảng xếp hạng: tên 3–12 ký tự [A-Za-z0-9_] (cho phép chữ tiếng Việt)
+  ---
+  duration_ms: 3.4258
+  type: 'test'
+  ...
+# Subtest: bảng xếp hạng: điểm giảm dần, bằng điểm thì ai đạt trước đứng trên, giữ top 10
+ok 23 - bảng xếp hạng: điểm giảm dần, bằng điểm thì ai đạt trước đứng trên, giữ top 10
+  ---
+  duration_ms: 1.5165
+  type: 'test'
+  ...
+# Subtest: contract có đủ trường bắt buộc và đúng 5 đèn
+ok 24 - contract có đủ trường bắt buộc và đúng 5 đèn
+  ---
+  duration_ms: 14.3931
+  type: 'test'
+  ...
+# Subtest: di chuyển theo công thức quay cam_yaw_deg = 90: move [0,1] đi về +X
+ok 25 - di chuyển theo công thức quay cam_yaw_deg = 90: move [0,1] đi về +X
+  ---
+  duration_ms: 7.2454
+  type: 'test'
+  ...
+# Subtest: vector move dài hơn 1 được chuẩn hóa
+ok 26 - vector move dài hơn 1 được chuẩn hóa
+  ---
+  duration_ms: 0.8867
+  type: 'test'
+  ...
+# Subtest: không nhặt quá carry_capacity
+ok 27 - không nhặt quá carry_capacity
+  ---
+  duration_ms: 0.6959
+  type: 'test'
+  ...
+# Subtest: nạp đủ lantern_cost thì thắp đèn; thắp hết đèn không kết thúc Đêm
+ok 28 - nạp đủ lantern_cost thì thắp đèn; thắp hết đèn không kết thúc Đêm
+  ---
+  duration_ms: 2.5416
+  type: 'test'
+  ...
+# Subtest: dựng scenario với lit:true không cộng điểm
+ok 29 - dựng scenario với lit:true không cộng điểm
+  ---
+  duration_ms: 0.4379
+  type: 'test'
+  ...
+# Subtest: nút chỉ kích hoạt khi false -> true (giữ nút không nạp lần hai)
+ok 30 - nút chỉ kích hoạt khi false -> true (giữ nút không nạp lần hai)
+  ---
+  duration_ms: 0.6071
+  type: 'test'
+  ...
+# Subtest: tỏa sáng làm choáng Bóng Mực trong pulse_radius và đẩy ra pulse_push_m
+ok 31 - tỏa sáng làm choáng Bóng Mực trong pulse_radius và đẩy ra pulse_push_m
+  ---
+  duration_ms: 1.899
+  type: 'test'
+  ...
+# Subtest: Bóng Mực không vào safe_radius của đèn đã thắp
+ok 32 - Bóng Mực không vào safe_radius của đèn đã thắp
+  ---
+  duration_ms: 9.9351
+  type: 'test'
+  ...
+# Subtest: bị chạm: mất 1 lửa, rơi floor(carried*ratio), có invuln_s
+ok 33 - bị chạm: mất 1 lửa, rơi floor(carried*ratio), có invuln_s
+  ---
+  duration_ms: 2.277
+  type: 'test'
+  ...
+# Subtest: hết lửa thì thua no_flames
+ok 34 - hết lửa thì thua no_flames
+  ---
+  duration_ms: 0.6918
+  type: 'test'
+  ...
+# Subtest: hết giờ thì thua dawn; time_left_s theo scenario
+ok 35 - hết giờ thì thua dawn; time_left_s theo scenario
+  ---
+  duration_ms: 0.9301
+  type: 'test'
+  ...
+# Subtest: lịch sinh Bóng Mực Đêm 1: 2 con ở tick 300, rồi mỗi 480 tick, tối đa 6
+ok 36 - lịch sinh Bóng Mực Đêm 1: 2 con ở tick 300, rồi mỗi 480 tick, tối đa 6
+  ---
+  duration_ms: 96.873
+  type: 'test'
+  ...
+# Subtest: tắt sáng tạo (mặc định): không sinh Chúa/Đuốc, snapshot không có khóa creative, đầu ra giống hệt
+ok 37 - tắt sáng tạo (mặc định): không sinh Chúa/Đuốc, snapshot không có khóa creative, đầu ra giống hệt
+  ---
+  duration_ms: 364.0201
+  type: 'test'
+  ...
+# Subtest: bật sáng tạo không làm đổi chuỗi ngẫu nhiên của game gốc
+ok 38 - bật sáng tạo không làm đổi chuỗi ngẫu nhiên của game gốc
+  ---
+  duration_ms: 12.188
+  type: 'test'
+  ...
+# Subtest: Đom Đóm Chúa: sinh lúc 15 s, tối đa 1, tự biến mất sau 20 s
+ok 39 - Đom Đóm Chúa: sinh lúc 15 s, tối đa 1, tự biến mất sau 20 s
+  ---
+  duration_ms: 23.5346
+  type: 'test'
+  ...
+# Subtest: Đom Đóm Chúa: nhặt được +5 đom đóm và +25 điểm
+ok 40 - Đom Đóm Chúa: nhặt được +5 đom đóm và +25 điểm
+  ---
+  duration_ms: 0.5438
+  type: 'test'
+  ...
+# Subtest: Đom Đóm Chúa: chỉ lấy tới sức chứa; đầy thì không nhặt
+ok 41 - Đom Đóm Chúa: chỉ lấy tới sức chứa; đầy thì không nhặt
+  ---
+  duration_ms: 1.4349
+  type: 'test'
+  ...
+# Subtest: Đuốc: sinh lúc 30 s, tối đa 1 trên đảo
+ok 42 - Đuốc: sinh lúc 30 s, tối đa 1 trên đảo
+  ---
+  duration_ms: 52.0003
+  type: 'test'
+  ...
+# Subtest: Đuốc: cầm 30 s, tỏa sáng như Q ngay khi nhặt và mỗi 3 s, không tốn đom đóm, không đụng hồi chiêu Q
+ok 43 - Đuốc: cầm 30 s, tỏa sáng như Q ngay khi nhặt và mỗi 3 s, không tốn đom đóm, không đụng hồi chiêu Q
+  ---
+  duration_ms: 35.1713
+  type: 'test'
+  ...
+# Subtest: night_start và các trường snapshot v1.1
+ok 44 - night_start và các trường snapshot v1.1
+  ---
+  duration_ms: 327.3275
+  type: 'test'
+  ...
+# Subtest: Lướt: 14 m/s trong 0.2 s, phát event dash
+ok 45 - Lướt: 14 m/s trong 0.2 s, phát event dash
+  ---
+  duration_ms: 215.9201
+  type: 'test'
+  ...
+# Subtest: Tạm dừng: tick tăng, sim_tick đứng, state paused
+ok 46 - Tạm dừng: tick tăng, sim_tick đứng, state paused
+  ---
+  duration_ms: 114.0173
+  type: 'test'
+  ...
+# Subtest: Rơi khỏi đảo: -1 lửa, mất hết đom đóm, hồi sinh ở điểm xuất phát với bất tử
+ok 47 - Rơi khỏi đảo: -1 lửa, mất hết đom đóm, hồi sinh ở điểm xuất phát với bất tử
+  ---
+  duration_ms: 113.4289
+  type: 'test'
+  ...
+# Subtest: Bục nhảy Đêm 2: bay sang đảo B và đáp đất
+ok 48 - Bục nhảy Đêm 2: bay sang đảo B và đáp đất
+  ---
+  duration_ms: 116.5575
+  type: 'test'
+  ...
+# Subtest: Bùa Gió: nhặt C1, tốc độ 7.2 m/s, hồi xuất hiện 45 s
+ok 49 - Bùa Gió: nhặt C1, tốc độ 7.2 m/s, hồi xuất hiện 45 s
+  ---
+  duration_ms: 151.5872
+  type: 'test'
+  ...
+# Subtest: Bùa Gió + lướt liên tục trên biển: chỉ lướt 1 lần trên không, vẫn rơi
+ok 50 - Bùa Gió + lướt liên tục trên biển: chỉ lướt 1 lần trên không, vẫn rơi
+  ---
+  duration_ms: 132.5809
+  type: 'test'
+  ...
+# Subtest: Gió Lạc: đuổi khi mang >= 5, cướp 3; Tỏa Sáng lúc flee làm thả lại
+ok 51 - Gió Lạc: đuổi khi mang >= 5, cướp 3; Tỏa Sáng lúc flee làm thả lại
+  ---
+  duration_ms: 91.7617
+  type: 'test'
+  ...
+# Subtest: Gió mạnh Đêm 3: bật ở sim_tick 1800
+ok 52 - Gió mạnh Đêm 3: bật ở sim_tick 1800
+  ---
+  duration_ms: 116.1542
+  type: 'test'
+  ...
+# Subtest: Vùng an toàn: đèn vừa thắp đẩy Bóng Mực ra 6 m trong 30 tick, không gây hit
+ok 53 - Vùng an toàn: đèn vừa thắp đẩy Bóng Mực ra 6 m trong 30 tick, không gây hit
+  ---
+  duration_ms: 101.7454
+  type: 'test'
+  ...
+# Subtest: Bóng Mực gây hit thì chuyển recoil và lùi 2 m trong 60 tick
+ok 54 - Bóng Mực gây hit thì chuyển recoil và lùi 2 m trong 60 tick
+  ---
+  duration_ms: 102.5221
+  type: 'test'
+  ...
+# Subtest: Đom đóm: 20 lúc đầu, thêm 1 ở tick 240
+ok 55 - Đom đóm: 20 lúc đầu, thêm 1 ở tick 240
+  ---
+  duration_ms: 104.0726
+  type: 'test'
+  ...
+# Subtest: Đêm 3 xuất phát ở (0,0,-30)
+ok 56 - Đêm 3 xuất phát ở (0,0,-30)
+  ---
+  duration_ms: 6.4662
+  type: 'test'
+  ...
+# Subtest: spawning kéo dài 3 s (180 tick) rồi mới wander
+ok 57 - spawning kéo dài 3 s (180 tick) rồi mới wander
+  ---
+  duration_ms: 13.8685
+  type: 'test'
+  ...
+# Subtest: wander di chuyển ngẫu nhiên nhưng tất định theo seed
+ok 58 - wander di chuyển ngẫu nhiên nhưng tất định theo seed
+  ---
+  duration_ms: 5.4482
+  type: 'test'
+  ...
+# Subtest: player.invuln trong snapshot là số giây
+ok 59 - player.invuln trong snapshot là số giây
+  ---
+  duration_ms: 1.059
+  type: 'test'
+  ...
+1..59
+# tests 59
+# suites 0
+# pass 59
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3950.2475
