@@ -19,6 +19,10 @@ const STORY = {
 };
 const REASON = { dawn_survived: 'Đảo giữ đủ đèn sáng tới bình minh.', dawn: 'Bình minh tới nhưng không đủ đèn sáng.', no_flames: 'Mây đã hết Ngọn Lửa.' };
 const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+// ?bench=1&seed=42&duration=30: cảnh benchmark chuẩn Ticket-04 (scripts/bench.mjs mở trang này).
+const BENCH = params.has('bench') ? { seed: Number(params.get('seed') ?? 42), duration: Number(params.get('duration') ?? 30), t0: null, last: null, dts: [], sent: false } : null;
+const IDLE = { move: [0, 0], cam_yaw_deg: 0 };
 
 // ---------- Cài đặt (lưu giữa các lần mở) ----------
 const settings = { volume: 0.6, sens: 0.3, cb: false };
@@ -155,10 +159,12 @@ const makeTorch = () => {
   g.add(stick, flame, halo);
   return g;
 };
+const shadeBodyGeo = new THREE.SphereGeometry(0.8, 16, 12);
+const shadeEdgeGeo = new THREE.SphereGeometry(0.9, 16, 12);
 const makeShade = () => {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 12), std(C.shade, { emissive: C.shadeEdge, emissiveIntensity: 0.15 }));
-  const edge = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 12), new THREE.MeshBasicMaterial({ color: C.shadeEdge, transparent: true, opacity: 0.25, side: THREE.BackSide }));
+  const body = new THREE.Mesh(shadeBodyGeo, std(C.shade, { emissive: C.shadeEdge, emissiveIntensity: 0.15 }));
+  const edge = new THREE.Mesh(shadeEdgeGeo, new THREE.MeshBasicMaterial({ color: C.shadeEdge, transparent: true, opacity: 0.25, side: THREE.BackSide }));
   g.add(body, edge); g.userData = { body, edge };
   return g;
 };
@@ -287,18 +293,36 @@ function onEvents(evs) {
 let acc = 0; let last = performance.now(); let pulseAnim = 0; let lastCountdown = -1; let wasJumpGrounded = true;
 function frame(now) {
   acc += Math.min(0.25, (now - last) / 1000); last = now;
+  if (BENCH && BENCH.t0 === null && game) { BENCH.t0 = now; BENCH.firstEpoch = performance.timeOrigin + now; }
   if (mode === 'play' && game) {
     while (acc >= 1 / TICK_HZ) {
       acc -= 1 / TICK_HZ;
       const before = game.player.grounded;
-      onEvents(step(game, readInput()));
+      onEvents(step(game, BENCH ? IDLE : readInput()));
       if (before && !game.player.grounded && game.player.vel[1] > 0) audio.sfx('jump');
       if (mode !== 'play') break;
     }
     draw(now / 1000);
   } else acc = 0;
   renderer.render(scene, camera);
+  if (BENCH && BENCH.t0 !== null) benchTick(now);
   requestAnimationFrame(frame);
+}
+
+// 3 s khởi động không đo, rồi ghi dt từng khung trong đúng `duration` giây và gửi về scripts/bench.mjs.
+function benchTick(now) {
+  const el = (now - BENCH.t0) / 1000;
+  if (el > 3 && el <= 3 + BENCH.duration && BENCH.last !== null) BENCH.dts.push(now - BENCH.last);
+  BENCH.last = now;
+  if (el > 3 + BENCH.duration && !BENCH.sent) {
+    BENCH.sent = true;
+    const gl = renderer.getContext();
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    const ua = navigator.userAgent.match(/(Edg|Chrome)\/[\d.]+/);
+    fetch('/api/bench', { method: 'POST', body: JSON.stringify({ dts: BENCH.dts, first_frame_epoch_ms: BENCH.firstEpoch, three: THREE.REVISION, gpu, browser: ua ? ua[0] : navigator.userAgent, canvas: `${renderer.domElement.width}x${renderer.domElement.height}` }) });
+    $('banner').style.display = 'block'; $('banner').textContent = `Bench xong: ${BENCH.dts.length} khung`;
+  }
 }
 
 function draw(t) {
@@ -381,26 +405,35 @@ function draw(t) {
   const th = (yaw * Math.PI) / 180;
   camera.position.set(p.pos[0] - Math.sin(th) * 9, p.pos[1] + 5, p.pos[2] - Math.cos(th) * 9);
   camera.lookAt(p.pos[0], p.pos[1] + 1.2, p.pos[2]);
+  if (BENCH) {
+    // Camera bay vòng tròn tâm (0,0,0), bán kính 30 m, cao 15 m, bắt đầu ở (30,15,0), ngược chiều kim đồng hồ nhìn từ trên, 15 s một vòng.
+    const a = (2 * Math.PI * (performance.now() - BENCH.t0)) / 15000;
+    camera.position.set(30 * Math.cos(a), 15, -30 * Math.sin(a));
+    camera.lookAt(0, 0, 0);
+  }
   camera.updateMatrixWorld(); // để project() trong HUD dùng đúng camera của frame này
   hud(g, lit);
 }
 
+// Chỉ ghi DOM khi nội dung đổi: ghi innerHTML mỗi khung gây layout và rác bộ nhớ (làm tụt p1_low_fps).
+function setDom(id, key, v) { const el = $(id); if (el['_' + key] !== v) { el['_' + key] = v; el[key] = v; } }
 function hud(g, lit) {
   const p = g.player;
-  $('flames').textContent = '🔥'.repeat(Math.max(0, p.flames)) + '·'.repeat(Math.max(0, T.flames - p.flames));
+  setDom('flames', 'textContent', '🔥'.repeat(Math.max(0, p.flames)) + '·'.repeat(Math.max(0, T.flames - p.flames)));
   const left = Math.max(0, Math.ceil(timeLeft(g)));
   const danger = left <= 30;
-  $('timer').textContent = `${danger && settings.cb ? '⚠ ' : ''}${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+  setDom('timer', 'textContent', `${danger && settings.cb ? '⚠ ' : ''}${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`);
   $('timer').classList.toggle('danger', danger);
-  document.documentElement.style.setProperty('--danger', settings.cb ? '#FFFFFF' : '#FF5A5F');
+  const dz = settings.cb ? '#FFFFFF' : '#FF5A5F';
+  if (hud.dz !== dz) { hud.dz = dz; document.documentElement.style.setProperty('--danger', dz); }
   if (left <= 10 && left !== lastCountdown) { lastCountdown = left; audio.sfx('tick'); }
-  $('topright').innerHTML = `Đèn <b>${lit}/${g.lanterns.length}</b><br>Điểm <b>${g.score}</b><br><small>Đêm ${g.night} – ${MAPS[g.night].name}</small>`;
   const cap = capacity(g);
   const need = Math.ceil(T.win_ratio * g.lanterns.length - 1e-9);
-  $('topright').innerHTML += `<br><small>Cần ${need} đèn sáng lúc bình minh</small>`;
-  if (p.torch > 0) $('topright').innerHTML += `<br>🔥 Đuốc <b>${Math.ceil(p.torch / TICK_HZ)}s</b>`;
-  $('bar').innerHTML = Array.from({ length: cap }, (_, i) => `<i class="${i < p.carried ? 'on' : ''}"></i>`).join('') + `<span style="margin-left:8px">${p.carried}/${cap}</span>`;
-  const cd = (el, ticks, total) => { el.querySelector('span').style.height = `${total ? (100 * ticks) / total : 0}%`; };
+  setDom('topright', 'innerHTML', `Đèn <b>${lit}/${g.lanterns.length}</b><br>Điểm <b>${g.score}</b><br><small>Đêm ${g.night} – ${MAPS[g.night].name}</small>`
+    + `<br><small>Cần ${need} đèn sáng lúc bình minh</small>`
+    + (p.torch > 0 ? `<br>🔥 Đuốc <b>${Math.ceil(p.torch / TICK_HZ)}s</b>` : ''));
+  setDom('bar', 'innerHTML', Array.from({ length: cap }, (_, i) => `<i class="${i < p.carried ? 'on' : ''}"></i>`).join('') + `<span style="margin-left:8px">${p.carried}/${cap}</span>`);
+  const cd = (el, ticks, total) => { const h = `${total ? Math.round((100 * ticks) / total) : 0}%`; const s = el.querySelector('span'); if (s.style.height !== h) s.style.height = h; };
   cd($('cd-dash'), p.dashCd, T.dash_cooldown_s * TICK_HZ);
   cd($('cd-pulse'), p.pulseCd, T.pulse_cooldown_s * TICK_HZ);
   $('cd-dash').style.borderColor = p.charm > 0 ? '#C8102E' : '';
@@ -450,8 +483,11 @@ buildTerrain(1);
 camera.position.set(0, 30, -50); camera.lookAt(0, 0, 0);
 
 // ?night=N vào thẳng Đêm N (để kiểm chứng); ?fps hiện FPS trung bình từ lúc vào đêm.
-const params = new URLSearchParams(location.search);
-if (params.has('night')) { night = Math.min(3, Math.max(1, Number(params.get('night')) || 1)); startNight(); }
+if (BENCH) {
+  night = 1; clearPools(); buildTerrain(1);
+  game = createGame({ seed: BENCH.seed, tuning: T, night: 1, bench: true });
+  yaw = 0; mode = 'play'; show(null);
+} else if (params.has('night')) { night = Math.min(3, Math.max(1, Number(params.get('night')) || 1)); startNight(); }
 if (params.has('fps')) {
   const el = document.createElement('div');
   el.id = 'fps'; el.className = 'hud'; el.style.cssText = 'bottom:40px;left:8px;font:14px monospace;color:#F2C14E';

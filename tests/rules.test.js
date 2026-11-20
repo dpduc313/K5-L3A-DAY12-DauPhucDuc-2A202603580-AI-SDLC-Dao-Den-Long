@@ -12,7 +12,7 @@ const runSteps = (g, n, inp = idle) => { const ev = []; for (let i = 0; i < n; i
 
 test('contract có đủ trường bắt buộc và đúng 5 đèn', () => {
   for (const k of ['contract_version', 'team', 'build_cmd', 'run_cmd', 'headless_cmd']) assert.ok(contract[k], k);
-  assert.equal(contract.contract_version, '1.2'); // Ticket-03: contract lên v1.2
+  assert.equal(contract.contract_version, '1.3'); // Ticket-04: contract lên v1.3 (thêm bench_cmd, soak_cmd; xem phase4.test.js)
   for (const k of ['fuel_max', 'fuel_decay_per_s', 'fuel_per_mote', 'relight_cost', 'win_ratio', 'drain_per_s', 'low_fuel_threshold', 'capacity_max']) assert.ok(k in T, k);
   for (const k of ['dash_speed', 'dash_duration_s', 'dash_cooldown_s', 'night2_duration_s', 'night3_duration_s']) assert.ok(k in T, k);
   const need = ['player_speed', 'carry_capacity', 'lantern_cost', 'lantern_count_night1', 'pickup_radius', 'interact_radius', 'pulse_cost', 'pulse_radius', 'night1_duration_s', 'flames', 'invuln_s', 'hit_drop_ratio', 'pulse_stun_s', 'pulse_push_m', 'pulse_cooldown_s', 'safe_radius', 'shade_speed', 'shade_hit_radius', 'fall_enabled'];

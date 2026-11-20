@@ -1,9 +1,11 @@
 {
-  "contract_version": "1.2",
+  "contract_version": "1.3",
   "team": "2A202603580-dau-phuc-duc",
   "build_cmd": "npm ci",
-  "run_cmd": "npm run dev",
+  "run_cmd": "node scripts/play.mjs",
   "headless_cmd": "node src/headless.js",
+  "bench_cmd": "node scripts/bench.mjs",
+  "soak_cmd": "node --expose-gc --single-threaded --max-semi-space-size=1 src/soak.js",
   "tuning": {
     "player_speed": 6.0,
     "carry_capacity": 10,

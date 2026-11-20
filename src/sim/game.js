@@ -87,7 +87,8 @@ const dist3 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 const idNum = (id) => { const m = /(\d+)$/.exec(id); return m ? Number(m[1]) : Infinity; };
 const byId = (a, b) => idNum(a.id) - idNum(b.id) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
-export function createGame({ seed, tuning, scenario = {}, night = 1, creative = false }) {
+export function createGame({ seed, tuning, scenario = {}, night = 1, creative = false, bench = false }) {
+  if (bench) return createBench(seed, tuning, night);
   const T = tuning;
   const map = MAPS[night];
   const rng = mulberry32(seed);
@@ -181,6 +182,26 @@ export function createGame({ seed, tuning, scenario = {}, night = 1, creative = 
   return g;
 }
 
+// Ticket-04 §1: cảnh benchmark chuẩn. 200 Bóng Mực wander và 100 đom đóm rải đều trên đảo theo seed,
+// L1–L3 sáng fuel 100, Mây đứng ở điểm xuất phát (0,0,0). Không bật sáng tạo.
+const BENCH_SHADES = 200;
+const BENCH_MOTES = 100;
+const BENCH_R = 38;
+function createBench(seed, tuning, night) {
+  const g = createGame({ seed, tuning, night, scenario: { random_motes: false, random_shades: false, random_drifters: false, wind_enabled: false, motes: [], shades: [], charms: [] } });
+  g.bench = true;
+  const r = mulberry32(seed);
+  const spot = () => { const a = r() * Math.PI * 2; const d = BENCH_R * Math.sqrt(r()); const x = d * Math.cos(a); const z = d * Math.sin(a); return [x, g.map.ground(x, z) ?? 0, z]; };
+  for (const l of g.lanterns.slice(0, 3)) { l.lit = true; l.everLit = true; l.fuel = tuning.fuel_max * F; l.deposited = tuning.lantern_cost; }
+  for (let i = 0; i < BENCH_SHADES; i++) {
+    const [x, y, z] = spot();
+    g.shades.push({ id: `S${i + 1}`, pos: [x, y + SHADE_Y, z], state: 'wander', left: 0, push: null, expel: null, lantern: null, drainTicks: 0 });
+  }
+  g.nextShade = BENCH_SHADES + 1;
+  for (let i = 0; i < BENCH_MOTES; i++) addMote(g, spot(), 'random', null, null);
+  return g;
+}
+
 export function groundAt(g, x, z) {
   for (const s of g.map.solids) if (Math.hypot(x - s.x, z - s.z) <= s.r) return Infinity;
   return g.map.ground(x, z);
@@ -253,9 +274,9 @@ export function step(g, input) {
     if (g.wind.active && --g.wind.left <= 0) g.wind.active = false;
     if (g.simTick % WIND_EVERY === 0) { g.wind = { active: true, dir: Math.floor(g.rng() * 360), left: WIND_TICKS }; }
   }
-  // Ticket-03 bước 2: trừ dầu (tự hao 1/s + mỗi bóng drain 5/s), rồi đèn fuel <= 0 tắt.
-  const decay = Math.round(T.fuel_decay_per_s);
-  const drainRate = Math.round(T.drain_per_s);
+  // Ticket-03 bước 2: trừ dầu (tự hao 1/s + mỗi bóng drain 5/s), rồi đèn fuel <= 0 tắt. Cảnh bench tắt hao dầu.
+  const decay = g.bench ? 0 : Math.round(T.fuel_decay_per_s);
+  const drainRate = g.bench ? 0 : Math.round(T.drain_per_s);
   for (const l of g.lanterns) if (l.lit) l.fuel -= decay;
   for (const s of [...g.shades].sort(byId)) {
     if (s.state !== 'drain') continue;
@@ -280,8 +301,8 @@ export function step(g, input) {
     movePlayer(g, input, wasPressed, ev);
   }
 
-  // 4. Nhặt đom đóm và bùa
-  if (p.fallWait === 0) {
+  // 4. Nhặt đom đóm và bùa (cảnh bench tắt nhặt)
+  if (p.fallWait === 0 && !g.bench) {
     const cap = capacity(g);
     for (let i = 0; i < g.motes.length && p.carried < cap; ) {
       const m = g.motes[i];
@@ -394,7 +415,7 @@ export function step(g, input) {
     }
     if (s.expel) continue; // đang bị đèn vừa thắp đẩy ra: không đuổi
     const d = distXZ(s.pos, p.pos);
-    const playerTargetable = p.fallWait === 0;
+    const playerTargetable = p.fallWait === 0 && !g.bench; // cảnh bench: bóng chỉ wander
     const low = T.low_fuel_threshold * F;
     if (s.state === 'drain') {
       const l = g.lanterns.find((x) => x.id === s.lantern);
@@ -444,8 +465,8 @@ export function step(g, input) {
   for (const d of g.drifters) moveDrifter(g, d);
   g.drifters = g.drifters.filter((d) => d.state !== 'removed');
 
-  // 9. Chạm: Gió Lạc cướp trước, rồi Bóng Mực
-  if (p.fallWait === 0) {
+  // 9. Chạm: Gió Lạc cướp trước, rồi Bóng Mực (cảnh bench tắt sát thương)
+  if (p.fallWait === 0 && !g.bench) {
     for (const d of [...g.drifters].sort(byId)) {
       if (d.state === 'flee' || d.used || p.carried <= 0) continue;
       if (distXZ(d.pos, p.pos) <= DRIFTER_STEAL_R) {
@@ -499,6 +520,7 @@ export function step(g, input) {
 
   // 11. Thắng / thua
   // Ticket-03: không còn thắng sớm. Hết lửa luôn thua trước; hết giờ thì thắng nếu số đèn sáng >= ceil(win_ratio × tổng).
+  if (g.bench) return events; // cảnh bench tắt điều kiện kết thúc Đêm
   if (p.flames <= 0) end(g, 'lost', 'no_flames', ev);
   else if (timeLeft(g) <= 1e-9) {
     const need = Math.ceil(T.win_ratio * g.lanterns.length - 1e-9);
