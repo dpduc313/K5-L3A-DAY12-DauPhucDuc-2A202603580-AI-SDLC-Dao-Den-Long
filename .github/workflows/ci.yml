@@ -20,4 +20,14 @@ jobs:
           $CMD --seed 5 --night 1 --ticks 5000 --out b.jsonl
           cmp a.jsonl b.jsonl
           tail -1 a.jsonl
+      - name: Soak 10 Dem bang soak_cmd, kiem nguong
+        run: |
+          CMD=$(node -p "require('./game.contract.json').soak_cmd")
+          $CMD --seed 7 --nights 10 --out soak-ci.json
+          node -e "const s=require('./soak-ci.json'); console.log(s); if (s.crashes!==0 || s.mem_end_mb > 1.2*s.mem_start_mb) process.exit(1)"
+      - name: Xuat bang xep hang bang run_cmd
+        run: |
+          CMD=$(node -p "require('./game.contract.json').run_cmd")
+          $CMD --export-leaderboard lb.json
+          node -e "const l=require('./lb.json'); if (!Array.isArray(l.entries)) process.exit(1)"
       - run: npm run build
