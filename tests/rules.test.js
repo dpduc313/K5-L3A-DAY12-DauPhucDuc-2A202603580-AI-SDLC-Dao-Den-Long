@@ -12,7 +12,8 @@ const runSteps = (g, n, inp = idle) => { const ev = []; for (let i = 0; i < n; i
 
 test('contract có đủ trường bắt buộc và đúng 5 đèn', () => {
   for (const k of ['contract_version', 'team', 'build_cmd', 'run_cmd', 'headless_cmd']) assert.ok(contract[k], k);
-  assert.equal(contract.contract_version, '1.0');
+  assert.equal(contract.contract_version, '1.1'); // Ticket-02: contract lên v1.1
+  for (const k of ['dash_speed', 'dash_duration_s', 'dash_cooldown_s', 'night2_duration_s', 'night3_duration_s']) assert.ok(k in T, k);
   const need = ['player_speed', 'carry_capacity', 'lantern_cost', 'lantern_count_night1', 'pickup_radius', 'interact_radius', 'pulse_cost', 'pulse_radius', 'night1_duration_s', 'flames', 'invuln_s', 'hit_drop_ratio', 'pulse_stun_s', 'pulse_push_m', 'pulse_cooldown_s', 'safe_radius', 'shade_speed', 'shade_hit_radius', 'fall_enabled'];
   for (const k of need) assert.ok(k in T, k);
   assert.equal(T.lantern_count_night1, 5);
@@ -61,12 +62,14 @@ test('nút chỉ kích hoạt khi false -> true (giữ nút không nạp lần h
 });
 
 test('tỏa sáng làm choáng Bóng Mực trong pulse_radius và đẩy ra pulse_push_m', () => {
-  const g = createGame({ seed: 1, tuning: T, scenario: { ...base, player: { carried: 1 }, shades: [{ id: 'A', pos: [3, 1, 0] }, { id: 'B', pos: [20, 1, 0] }] } });
-  const ev = step(g, { ...idle, pulse: true });
+  const g = createGame({ seed: 1, tuning: T, scenario: { ...base, player: { carried: T.pulse_cost }, shades: [{ id: 'A', pos: [3, 1, 0] }, { id: 'B', pos: [20, 1, 0] }] } });
+  // Ticket-02: đẩy lùi tổng 4 m rải trong 15 tick đầu (trước đây đẩy tức thì) -> kiểm sau 15 tick.
+  const ev = runSteps(g, 15, { ...idle, pulse: true });
   assert.deepEqual(ev.find((e) => e.name === 'pulse').data, { stunned_ids: ['A'] });
   assert.equal(g.shades[0].state, 'stunned');
-  assert.ok(Math.abs(g.shades[0].pos[0] - (3 + T.pulse_push_m)) < 1e-6);
-  assert.equal(g.player.carried, 1 - T.pulse_cost);
+  assert.ok(Math.abs(g.shades[0].pos[0] - (3 + T.pulse_push_m)) < 1e-6, String(g.shades[0].pos[0]));
+  assert.equal(g.player.carried, T.pulse_cost - T.pulse_cost);
+  assert.equal(g.score, T.score.per_stun);
 });
 
 test('Bóng Mực không vào safe_radius của đèn đã thắp', () => {
@@ -94,13 +97,15 @@ test('hết lửa thì thua no_flames', () => {
 test('hết giờ thì thua dawn; time_left_s theo scenario', () => {
   const g = createGame({ seed: 1, tuning: T, scenario: { ...base, time_left_s: 1 } });
   const ev = runSteps(g, 100);
-  assert.equal(g.steps, 60);
+  assert.equal(g.simTick, 60); // Ticket-02: đếm sim_tick riêng vì có pause
   assert.deepEqual(ev.at(-1).data, { result: 'lost', reason: 'dawn' });
 });
 
-test('random_shades mặc định: Bóng Mực mới sinh theo thời gian và phát shade_spawned', () => {
-  // shades: [] thay danh sách ban đầu, random_shades vẫn bật nên con đầu tiên sinh ở giây 30.
-  const g = createGame({ seed: 3, tuning: T, scenario: { random_motes: false, shades: [] } });
-  const ev = runSteps(g, 30 * 60);
-  assert.deepEqual(ev.filter((e) => e.name === 'shade_spawned').map((e) => [e.tick, e.data.id]), [[1800, 'S1']]);
+test('lịch sinh Bóng Mực Đêm 1: 2 con ở tick 300, rồi mỗi 480 tick, tối đa 6', () => {
+  // Ticket-02 thay lịch Phase 1 (2 con lúc đầu, mỗi 30 s) bằng lịch chuẩn.
+  const g = createGame({ seed: 3, tuning: T, scenario: { random_motes: false } });
+  const ev = runSteps(g, 300 + 480 * 6);
+  const sp = ev.filter((e) => e.name === 'shade_spawned').map((e) => [e.tick, e.data.id]);
+  assert.deepEqual(sp, [[300, 'S1'], [300, 'S2'], [780, 'S3'], [1260, 'S4'], [1740, 'S5'], [2220, 'S6']]);
+  for (const s of g.shades) assert.ok(Math.abs(Math.hypot(s.pos[0], s.pos[2]) - 37) < 1e-6);
 });

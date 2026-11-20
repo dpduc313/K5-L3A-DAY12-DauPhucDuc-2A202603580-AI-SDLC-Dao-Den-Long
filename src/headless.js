@@ -47,7 +47,7 @@ export function validateInputs(obj) {
         throw new FormatError('inputs: move phai la [x, z] trong [-1, 1]');
     }
     if (f.cam_yaw_deg !== undefined && !isNum(f.cam_yaw_deg)) throw new FormatError('inputs: cam_yaw_deg phai la so');
-    for (const b of ['jump', 'interact', 'pulse', 'dash'])
+    for (const b of ['jump', 'interact', 'pulse', 'dash', 'pause'])
       if (f[b] !== undefined && typeof f[b] !== 'boolean') throw new FormatError(`inputs: ${b} phai la boolean`);
   }
   return obj.frames;
@@ -78,14 +78,30 @@ export function validateScenario(s) {
       if (l.deposited !== undefined && !(Number.isInteger(l.deposited) && l.deposited >= 0)) throw new FormatError('scenario.lanterns[].deposited');
     }
   }
+  for (const k of ['invuln_ticks', 'dash_cd_ticks', 'pulse_cd_ticks', 'charm_ticks'])
+    if (s.player && s.player[k] !== undefined && !(Number.isInteger(s.player[k]) && s.player[k] >= 0)) throw new FormatError(`scenario.player.${k}`);
+  for (const k of ['random_drifters', 'wind_enabled'])
+    if (s[k] !== undefined && typeof s[k] !== 'boolean') throw new FormatError(`scenario.${k} phai la boolean`);
+  if (s.shades !== undefined) for (const x of s.shades) {
+    if (x.state !== undefined && !['spawning', 'wander', 'chase', 'recoil', 'stunned'].includes(x.state)) throw new FormatError('scenario.shades[].state');
+    if (x.state_ticks_left !== undefined && !(Number.isInteger(x.state_ticks_left) && x.state_ticks_left >= 0)) throw new FormatError('scenario.shades[].state_ticks_left');
+  }
+  if (s.drifters !== undefined) {
+    if (!Array.isArray(s.drifters) || !s.drifters.every((x) => x && isVec3(x.pos) && (x.id === undefined || typeof x.id === 'string') && (x.state === undefined || ['idle', 'chase', 'flee'].includes(x.state)) && (x.stolen === undefined || (Number.isInteger(x.stolen) && x.stolen >= 0))))
+      throw new FormatError('scenario.drifters phai la mang {pos, id?, state?, stolen?}');
+  }
+  if (s.charms !== undefined) {
+    if (!Array.isArray(s.charms) || !s.charms.every((x) => x && typeof x.id === 'string' && (x.pos === undefined || isVec3(x.pos)) && (x.available === undefined || typeof x.available === 'boolean')))
+      throw new FormatError('scenario.charms phai la mang {id, pos?, available?}');
+  }
   if (s.time_left_s !== undefined && !(isNum(s.time_left_s) && s.time_left_s > 0)) throw new FormatError('scenario.time_left_s phai > 0');
   return s;
 }
 
-export function run({ seed, scenario, frames, ticks, every, tuning }) {
-  const g = createGame({ seed, tuning, scenario });
-  const lines = [snapshot(g)];
-  const input = { move: [0, 0], cam_yaw_deg: 0, jump: false, interact: false, pulse: false, dash: false };
+export function run({ seed, scenario, frames, ticks, every, tuning, night = 1 }) {
+  const g = createGame({ seed, tuning, scenario, night });
+  const lines = [snapshot(g), { type: 'event', tick: 0, name: 'night_start', data: { night } }];
+  const input = { move: [0, 0], cam_yaw_deg: 0, jump: false, interact: false, pulse: false, dash: false, pause: false };
   let fi = 0;
   for (let k = 0; k < ticks; k++) {
     while (fi < frames.length && frames[fi].tick <= k) {
@@ -94,10 +110,11 @@ export function run({ seed, scenario, frames, ticks, every, tuning }) {
     }
     const evs = step(g, { ...input, move: [...input.move] });
     lines.push(...evs);
-    if (g.state !== 'playing') break;
-    if (g.steps % every === 0) lines.push(snapshot(g));
+    const over = g.state === 'won' || g.state === 'lost';
+    if (g.tick % every === 0 || over) lines.push(snapshot(g));
+    if (over) break;
   }
-  lines.push({ type: 'end', ticks: g.steps, state: g.state, score: g.score });
+  lines.push({ type: 'end', ticks: g.tick, state: g.state, score: g.score });
   return lines;
 }
 
@@ -108,7 +125,8 @@ function main() {
   const ticks = Number(a.ticks);
   const every = a['snapshot-every'] === undefined ? 10 : Number(a['snapshot-every']);
   if (!Number.isInteger(seed)) fail('--seed phai la so nguyen', 1);
-  if (a.night !== '1') fail('chi ho tro --night 1', 1);
+  if (!['1', '2', '3'].includes(a.night)) fail('--night phai la 1, 2 hoac 3', 1);
+  const night = Number(a.night);
   if (!Number.isInteger(ticks) || ticks < 0) fail('--ticks phai la so nguyen >= 0', 1);
   if (!Number.isInteger(every) || every < 1) fail('--snapshot-every phai la so nguyen >= 1', 1);
 
@@ -125,7 +143,7 @@ function main() {
     throw e;
   }
 
-  const lines = run({ seed, scenario, frames, ticks, every, tuning });
+  const lines = run({ seed, scenario, frames, ticks, every, tuning, night });
   writeFileSync(a.out, lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
 }
 
