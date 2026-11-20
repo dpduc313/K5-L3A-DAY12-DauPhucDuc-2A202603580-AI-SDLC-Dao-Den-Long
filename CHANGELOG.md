@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [Chưa phát hành] — sửa lỗi sau tag phase-3
+
+### Thay đổi hành vi
+- **Mỗi lần ở trên không chỉ lướt được 1 lần**, chạm đất hoặc hồi sinh thì được lướt lại. Trước đây Bùa Gió bỏ hồi chiêu Lướt, còn lướt trên không giữ nguyên độ cao, nên lướt liên tục làm Mây bay lơ lửng mãi trên biển. Đầu ra headless chỉ đổi khi lướt lần thứ hai trước khi chạm đất. Test: `tests/scenarios.test.js` "Bùa Gió + lướt liên tục trên biển".
+
+### Khác
+- Bản web: mất focus thì xóa phím đang giữ và tự tạm dừng; thêm phím lướt F.
+
 ## [phase-3] — Ticket-03 "Đèn cạn dầu", Contract v1.2
 
 ### Breaking changes
