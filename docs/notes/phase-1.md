@@ -34,4 +34,4 @@
 | Mây đội nón lá treo đèn lồng | ảnh chụp | `docs/proof/phase-1/*.png` | **chưa có bằng chứng** |
 | Stop hook chặn khi test đỏ | chạy hook với test đỏ giả | `docs/proof/phase-1/stop-hook-chan-khi-do.txt` | đạt |
 
-Ghi chú tag: tag `phase-1` (d12bd98) đặt lúc 14:55, khi chưa có bản 3D, CI và Stop hook. Các phần này được thêm sau đó, trong lúc Phase 2 chưa mở.
+Ghi chú tag: tag `phase-1` lần đầu đặt ở `d12bd98` (14:55, khi chưa có bản 3D). Sau đó tag được dời sang `46ecc70` (thêm bản 3D, CI, Stop hook) lúc Phase 2 vừa phát hành, theo cách dời tag ở SUBMISSION.md §5. Tag mới có thời điểm sau 15:00.
