@@ -9,7 +9,8 @@ Game 3D, Node.js (JS thuần, ESM) + Three.js. Đề gốc: `docs/de-bai/`. Yêu
 - Headless: `node src/headless.js --seed 1 --night 1|2|3 --ticks 600 --out out.jsonl [--scenario f.json] [--inputs f.json]`
 
 ## Cấu trúc
-- `src/sim/game.js` luật, đúng "Thứ tự xử lý trong một tick" của Ticket-02. `src/sim/maps.js` bản đồ chuẩn. Không `Math.random`, `Date`, DOM trong `src/sim`.
+- `src/sim/game.js` luật, đúng "Thứ tự xử lý trong một tick" của Ticket-02 + bổ sung Ticket-03 (trừ dầu và tắt đèn ở bước 2; thắng/thua chỉ xét ở bước 11). Mô hình đèn: `docs/adr/0001-*.md`. Dầu lưu bằng đơn vị nguyên 1/60 (`F`).
+- Luật mới đổi luật cũ: ghi ADR trong `docs/adr/`, breaking change trong `CHANGELOG.md`, bảng "test bị ảnh hưởng" trong `docs/notes/phase-N.md`. `src/sim/maps.js` bản đồ chuẩn. Không `Math.random`, `Date`, DOM trong `src/sim`.
 - `src/web/` chỉ đọc state sim và vẽ. Âm thanh `src/web/audio.js` (WebAudio, không asset).
 - `game.contract.json` là nguồn duy nhất của tuning; hằng số chuẩn không có khóa tuning nằm đầu `game.js`.
 
